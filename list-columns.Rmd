@@ -1,0 +1,289 @@
+---
+title: "List-column data frames"
+output: html_document
+---
+
+# List-column data frames
+
+Goals:
+- Understand what a list-column data frame is and why it can be useful.
+- Gain experience using list-column data frames for basic computation.
+- Build a list-column from scratch, with `tidyr::nest()`, and with `dplyr::summarize()`.
+
+# Data set
+
+We will work with the [women in parliament data set](https://github.com/saghirb/Women-in-Parliament-Hex-Sticker). First, some data cleaning:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+wiptv <- readr::read_csv(here::here("data-raw", "wip.csv"), skip = 4)
+names(wiptv) <- tolower(make.names(names(wiptv)))
+wp <- wiptv %>%
+  tidyr::gather(key = YearC, value = pctWiP, dplyr::starts_with("X"), na.rm = TRUE) %>%
+  dplyr::mutate(year = readr::parse_number(YearC)) %>%
+  dplyr::select(-YearC, -indicator.name, -indicator.code, -country.code) %>%
+  dplyr::rename(percent_wip = pctWiP, country = country.name) %>%
+  dplyr::select(year, country, percent_wip)
+names(wp) <- gsub("\\.", "_", names(wp))
+```
+
+Let's make a quick plot of the data to help understand it:
+
+```{r}
+wp %>%
+  filter(country %in% c(
+    "Portugal", "Sweden",
+    "Spain", "Hungary", "Romania", "Finland",
+    "Germany", "European Union"
+  )) %>%
+  ggplot(aes(year, percent_wip, colour = country)) +
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(
+    limits = c(0, 50),
+    breaks = seq(0, 50, by = 10)
+  ) +
+  ggtitle("Women in Parliament: EU Countries") +
+  ylab("% Women in Parliament")
+```
+
+# Introducing list-column data frames
+
+List-columns are an interesting, relatively new, and useful data format in R. Technically you can work with them in base R but they are a bit clunky and don't print well. The tibble package solves this and makes working with list columns elegant. There also wasn't a huge advantage to working with list columns until dplyr came along.
+
+We can make a basic list-column data frame like this:
+
+```{r}
+d <- tibble::tibble(
+  x = list(1:3, 3:5),
+  y = c("1, 2", "3, 4, 5")
+)
+d
+d$x[[1]]
+```
+
+Weird, right? Remember that a data frame is just a list with some specific attributes.
+
+# Forming list-column data frames with nest()
+
+In practice, you will likely find list-columns most useful when paired with `tidyr::nest()`, which takes a groupped data frame and nests it.
+
+For example:
+
+```{r}
+by_country <- wp %>%
+  group_by(country) %>%
+  tidyr::nest()
+by_country
+```
+
+The data column now represents a sequence of lists and each row contains a data frame.
+
+We can pick out the first list data frame like this:
+
+```{r}
+by_country$data[[1]]
+```
+
+Where this really shines is that we can now iterate over that list column using purrr and dplyr tools that otherwise work with a data frame.
+
+Let's say we wanted to fit a linear regression estimating the slope of how percent of women in parliament in each country are increasing over time.
+
+We can write a little function that will fit a linear model to a single chunk of data:
+
+```{r}
+country_model <- function(df) {
+  lm(percent_wip ~ year, data = df)
+}
+```
+
+We could iterate over the data frames in the list column like this:
+
+```{r}
+models <- purrr::map(by_country$data, country_model)
+```
+
+But it's probably more useful to stay in a data frame format. Otherwise there wouldn't be much point to working with list-columns. To stay in a data frame format, we could use the mutate function:
+
+```{r}
+by_country <- by_country %>%
+  mutate(model = purrr::map(data, country_model))
+by_country
+```
+
+Because we are still in a data frame format we can use dplyr functions on our output. For example, we could filter just for Australia:
+
+```{r}
+lms <- by_country %>%
+  filter(country == "Australia")
+lms
+lms$model[[1]]
+```
+
+And we could get even fancier and do something like calculate residuals from every model and append them to our original data frame. To do that we will use the function `modelr::add_residuals()`. Inspect the contents of that function and make sure you understand it.
+
+```{r}
+by_country <- by_country %>%
+  mutate(
+    resids = purrr::map2(data, model, modelr::add_residuals)
+  )
+by_country
+```
+
+If we want to get at the contents of that output then we will need to "unnest" the data frame intolerant which column to unnest:
+
+```{r}
+resids <- tidyr::unnest(by_country, resids)
+resids
+```
+
+Let's make a quick plot of that:
+
+```{r}
+resids %>%
+  ggplot(aes(year, resid)) +
+  geom_line(aes(group = country), alpha = 0.3) +
+  geom_smooth(se = FALSE, method = "gam")
+```
+
+We can also calculate statistics on the output using something like `broom::glance()`:
+
+```{r}
+by_country %>%
+  mutate(glance = purrr::map(model, broom::glance)) %>%
+  tidyr::unnest(glance)
+```
+
+That leaves all our original list columns. If we want to drop those, we can set the argument `.drop = TRUE`:
+
+```{r}
+glance <- by_country %>%
+  mutate(glance = purrr::map(model, broom::glance)) %>%
+  tidyr::unnest(glance, .drop = TRUE)
+glance
+
+glance %>%
+  arrange(r.squared)
+```
+
+Say we wanted to just look at the models that had a low R squared value:
+
+```{r}
+bad_fit <- filter(glance, r.squared < 0.1)
+
+wp %>%
+  semi_join(bad_fit, by = "country") %>%
+  ggplot(aes(year, percent_wip, colour = country)) +
+  geom_line()
+```
+
+# summarize() and list-columns
+
+Another use for list-columns is to capture the output from functions that don't return a single value. For example, the `quantile()` function. We can solve this by wrapping the output in `list()` on a group data frame. This will automatically turn into a list-column that we can then unnest.
+
+```{r}
+probs <- c(0.01, 0.25, 0.5, 0.75, 0.99)
+wp %>%
+  group_by(year) %>%
+  summarise(p = list(probs), q = list(quantile(percent_wip, probs))) %>%
+  tidyr::unnest()
+```
+
+Exercise: can you think of other summary functions that return multiple values where this could be useful?
+
+# Exercise 1
+
+Start with the following nested list-column data frame that we made above:
+
+```{r}
+by_country <- wp %>%
+  group_by(country) %>%
+  tidyr::nest() %>%
+  mutate(model = purrr::map(data, country_model))
+
+by_country
+```
+
+Use `mutate()` and `purrr::map()` to grab the slope for each model and save it in a new column. 
+
+Bonus: If that was easy then try also grabbing the intercept at the same time.
+
+```{r}
+slopes <- by_country %>% # exercise
+  mutate(
+    slope = purrr::map(model, ~ coef(.x)[[2]]), # exercise
+    intercept = purrr::map(model, ~ coef(.x)[[1]])
+  ) %>% # exercise
+  tidyr::unnest(intercept, slope, .drop = TRUE) # exercise
+```
+
+Try plotting the countries with the top thirty biggest slopes.
+
+Bonus: If that was easy then try ordering the slopes in your plot using `forcats::fct_reorder()` or some other approach.
+
+```{r}
+slopes %>% # exercise
+  top_n(30, slope) %>% # exercise
+  ggplot(aes(slope, forcats::fct_reorder(country, slope))) + # exercise
+  geom_point() # exercise
+```
+
+What about the most negative or lowest slopes?
+
+```{r}
+slopes %>% # exercise
+  top_n(30, -slope) %>% # exercise
+  ggplot(aes(slope, forcats::fct_reorder(country, slope))) + # exercise
+  geom_point() # exercise
+```
+
+Bonus question: you likely just copied and pasted the code to modify it to plot the lowest slopes. If we want to do that yet again then that sounds like a good case for using a function.
+
+Can you write a small function that takes your data frame, takes an argument for the number of rows to plot, takes an argument to plot the top or bottom slopes, and makes the plot? There are many ways you could do this. Test your function with different inputs.
+
+```{r}
+plot_slopes <- function(df, n = 10, type = c("top", "bottom")) { # exercise
+  type <- match.arg(type) # exercise
+  df %>% # exercise
+    top_n(n, if (type == "top") slope else -slope) %>% # exercise
+    ggplot(aes(slope, forcats::fct_reorder(country, slope))) + # exercise
+    geom_point() # exercise
+}
+
+plot_slopes(slopes, 15) # exercise
+plot_slopes(slopes, 15, type = "bottom") # exercise
+```
+
+# Exercise 2
+
+Can you use the same nest/list-column approach to expand the years column to include an `NA` for `percent_wip` for all missing years between the first and last year recorded for each country?
+
+Hint: `dplyr::group_by()` and `tidyr::nest()` by country.
+Hint: `purrr::map()` your data column to the `expand_years()` function (below) using `mutate()`. Call the new list column `years_filled`.
+Hint: Then `tidyr::unnest()` on your `years_filled` column.
+
+```{r}
+expand_years <- function(x) {
+  y <- data.frame(year = seq(min(x$year), max(x$year)))
+  dplyr::left_join(y, x, by = "year")
+}
+
+expanded_wp <- wp %>%
+  group_by(country) %>% # exercise
+  tidyr::nest() %>% # exercise
+  mutate(years_filled = purrr::map(data, expand_years)) %>% # exercise
+  tidyr::unnest(years_filled) # exercise
+
+expanded_wp
+```
+
+<!-- # https://r4ds.had.co.nz/many-models.html -->
+
+# Take home messages
+
+- List column data frames are a bit weird to look at and a bit hard to wrap your head around at first.
+- They are relatively new concept.
+- They are powerful because they let you continue to use dplyr verbs while operating on objects that are not a simple column of values, such as model output or anything you can jam into a list.
+- You could do everything you can do with list columns in some other way, but they are often the shortest most elegant route to get there.
+- List column data frames may truly baffle your old-school non-Tidyverse loving friends. ;)
