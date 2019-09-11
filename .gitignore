@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+*.docx
+*.pdf
+data-raw/*.csv
+data-raw/*.rds
+*.key

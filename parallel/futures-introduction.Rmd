@@ -1,0 +1,223 @@
+---
+title: "An introduction to the future package"
+output: html_document
+---
+
+# Goals
+
+<!-- - Understand when parallel processing can be useful. -->
+<!-- - Understand the difference between multi-session and multi-core strategies. -->
+<!-- - Gain a broad overview of the available parallel processing options in R. -->
+<!-- - Understand a basic example with the foreach package. -->
+<!-- - Understand the available `future::plan()`s: `sequential`,  -->
+<!--   `transparent`, `multiprocess`, `multisession`, `multicore`.  -->
+  <!-- Know that `cluster` and `remote` exist. -->
+
+- Become familiar with the future and future.apply packages.
+- Understand basic future examples with implicit and explicit APIs
+- Gain a basic overview have some more advanced functionality such as explicitly passing global variables.
+- Learn to iterate over the application of a basic function in parallel with the 'future.apply' package.
+
+# Future package introduction
+
+In this set of exercises we will work with the future package directly. Although you may find this useful to know, you are more likely to use a high-level wrapper for 'future' such as 'future.apply' by the same package author.
+
+Here's a small contrived example where we've split up a computation into two chunks:
+
+```{r}
+slow_sum <- function(x) {
+  out <- 0
+  for (i in seq_along(x)) {
+    out <- out + x[i]
+  }
+  out
+}
+
+a <- slow_sum(1:1e7)
+b <- slow_sum(1e7:2e7)
+y <- a + b
+y
+```
+
+All we have to do is substitute the `%<-%` operator from the future package and our computation will now be done in parallel if we set up an appropriate plan:
+
+```{r}
+library(future)
+plan(multiprocess)
+a %<-% slow_sum(1:1e7)
+b %<-% slow_sum(1e7:2e7)
+y <- a + b
+y
+```
+
+We could change our plan back to sequential if we want with the same code:
+
+```{r}
+plan(sequential)
+a %<-% slow_sum(1:1e7)
+b %<-% slow_sum(1e7:2e7)
+y <- a + b
+y
+```
+
+# Available plans
+
+From the documentation for the package:
+
+"When writing scripts or vignettes that uses futures, try to place any call to plan() as far up (as early on) in the code as possible. This will help users to quickly identify where the future plan is set up and allow them to modify it to their computational resources. Even better is to leave it to the user to set the plan() prior to source():ing the script or running the vignette"
+
+The most common plans you will use will be:
+
+```{r, eval=FALSE}
+plan(multisession)
+plan(multicore)
+plan(multiprocess)
+plan(sequential)
+plan(transparent)
+```
+
+The transparent plan is similar to the sequential plan but more closely emulates the usual behaviour of warnings and errors. I.e., it's helpful with debugging and troubleshooting.
+
+# Setting the number of cores
+
+What if we wanted to explicitly set the number of cores? We can do that by passing a value to the `workers` argument of many plans. For example, if we wanted to set the number of cores to the number of logical cores (not including virtual cores), we could do this:
+
+```{r, eval=FALSE}
+cores <- floor(future::availableCores()/2)
+plan(multisession, workers = cores)
+```
+
+# Nested parallel processing
+
+This just works:
+
+```{r}
+x <- rnorm(n = 100)
+a %<-% {
+  c %<-% slow_sum(x[1:25])
+  d %<-% slow_sum(x[26:50])
+  c + d
+}
+b %<-% {
+  c %<-% slow_sum(x[51:75])
+  d %<-% slow_sum(x[76:100])
+  c + d
+}
+y <- a + b
+y
+```
+
+Note the use of the `{ }` to define our multiline expression.
+
+# Implicit versus explicit API
+
+So far we have used the "implicit assignment API" (the `%<-%` operator). There is an alternative, the explicit API. This involves the `future()` to declare expressions that may be evaluated in the future and the `value()` function to resolve or evaluate the expression.
+
+Implicit assignment API:
+
+```{r}
+x <- 101:200
+a %<-% slow_sum(x[1:50])
+b %<-% slow_sum(x[51:100])
+y <- a + b
+y
+```
+
+Explicit functional API:
+
+```{r}
+x <- 101:200
+f <- future(slow_sum(x[1:50]))
+g <- future(slow_sum(x[51:100]))
+y <- value(f) + value(g)
+y
+```
+
+# Global variables and packages
+
+By default the future package does a great job of figuring out what global variables need to be passed to each process or core. Most other parallel processing options in R requires you to specify this yourself.
+
+For example, this just works:
+
+```{r}
+x <- rnorm(n = 100)
+y %<-% slow_sum(x)
+```
+
+To quote the documentation: "In most cases, such automatic collection of globals is sufficient and less tedious and error prone than if they are manually specified."
+
+Nonetheless, there are edge cases where the functions will fail to detect the global variables.
+
+One option is to define them with the `%globals%` operator:
+
+```{r}
+a <- 42
+
+f %<-% {
+  b <- 2
+  a * b
+}
+f
+
+f %<-% {
+  b <- 2
+  a * b
+} %globals% c("a")
+f
+```
+
+If we are working with the explicit API, we can define them like this:
+
+```{r}
+f <- future({
+  b <- 2
+  a * b 
+})
+value(f)
+
+f <- future({
+  b <- 2
+  a * b 
+}, globals = FALSE)
+# value(f) # error!
+
+f <- future({
+  b <- 2
+  a * b
+}, globals = "a")
+value(f)
+```
+
+# The future.apply package
+
+Likely a more useful way to use the future package for parallel processing in everyday coding, is via the future.apply package. The future.apply package provides replacements for many of the base R apply functions. For example, `future.apply::future_lapply()` is a replacement for the `lapply()` function. Remember that `purrr::map()` is analogous to `lapply()`: it applies a function to multiple elements and returns a list.
+
+```{r}
+library(future.apply)
+library(tictoc)
+
+plan(multisession)
+
+x <- 1:1e4
+tic()
+p_lapply <- profvis::profvis({
+  y <- lapply(x, quantile, probs = 1:3/4)
+})
+toc()
+p_lapply
+
+tic()
+p_future_lapply <- profvis::profvis({
+  y <- future.apply::future_lapply(x, quantile, probs = 1:3/4)
+})
+toc()
+p_future_lapply
+```
+
+We can pass global variables and packages if future has trouble figuring these out automatically via the `future.packages` and `future.globals` arguments to `future.apply::future_lapply()`.
+
+# Exercise
+
+TODO
+
+basic exercise with `future.apply::future_lapply` as a replacement for a loop.

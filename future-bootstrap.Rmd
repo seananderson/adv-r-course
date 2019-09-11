@@ -1,0 +1,261 @@
+---
+title: "Bootstrapping in parallel with the future package"
+output: html_document
+---
+
+# Goals:
+
+- Learn a variety of strategies for integrating future with dplyr and pipes.
+- Practice benchmarking parallel vs. sequential code.
+- Become aware of the 'furrr' package for mixing 'purrr' and 'future'.
+- Gain experience with a more complicated and realistic application of parallel processing in R.
+
+# The data
+
+Let's load the packages we will use:
+
+```{r}
+library(future)
+library(tictoc)
+library(dplyr)
+library(ggplot2)
+```
+
+Set up our parallel processing plan:
+
+```{r}
+future::plan(multisession)
+```
+
+We will work with trawl survey data for Pacific cod in Hecate Strait:
+
+```{r}
+d <- readRDS("data/pcod-syn-hs.rds")
+glimpse(d)
+ggplot(d, aes(longitude, latitude, size = density_kgpm2)) +
+  geom_point() +
+  scale_size_area() +
+  facet_wrap(~year)
+```
+
+# Functions for bootstrapping a relative biomass index
+
+Let's set up a series of small functions so we can calculate a bootstrap estimate of a groundfish trawl survey biomass index each year.
+
+First, a function that takes our data frame and calculates the biomass "stratified" by the grouping codes (depth strata):
+
+```{r}
+calculate_biomass <- function(dat, i = seq_len(nrow(dat))) {
+  dat[i, ] %>% group_by(year, grouping_code) %>%
+    summarise(density = mean(density_kgpm2)) %>%
+    group_by(year) %>%
+    summarise(biomass = sum(density * 2 * 2)) %>%
+    pull(biomass)
+}
+```
+
+Study that function and make sure you understand what it is doing. Note that we have set it up with an argument named `i`, which allows us to run our function on some subset of the data frame. This will be important so that we can use the `boot::boot()` function for bootstrapping. We have set it up so that it defaults to during the calculation on all rows.
+
+Let's try out our function:
+
+```{r}
+calculate_biomass(d)
+calculate_biomass(d, i = 1:200)
+```
+
+Now let's create a function that takes our data for a single year and applies a bootstrap stratified by the grouping codes/depth strata:
+
+```{r}
+bootstrap_one_year <- function(x, reps) {
+  b <- boot::boot(x, statistic = calculate_biomass, strata = x$grouping_code, 
+    R = reps)
+  suppressWarnings(bci <- boot::boot.ci(b, type = "perc"))
+  tibble::tibble(
+    survey = x$survey[1],
+    year = x$year[1],
+    est = mean(b$t),
+    lwr = bci$percent[[4]],
+    upr = bci$percent[[5]],
+    cv = sd(b$t)/mean(b$t))
+}
+```
+
+Study that function make sure you understand what it is doing.
+
+Let's try that function on a single year and for 50 bootstrap iterations:
+
+```{r}
+dplyr::filter(d, year == 2019) %>%
+  bootstrap_one_year(reps = 50)
+```
+
+Now we need some way to iterate over the various years. Here's one way we can do it sequentially:
+
+```{r}
+boot_biomass <- function(dat, reps = 500) {
+  dat %>% dplyr::group_split(year) %>% 
+    purrr::map_dfr(bootstrap_one_year, reps = reps)
+}
+b <- boot_biomass(d, reps = 10)
+ggplot(b, aes(year, est, ymin = lwr, ymax = upr)) +
+  geom_ribbon(alpha = 0.4) +
+  geom_line() +
+  facet_wrap(~survey)
+```
+
+This makes use of the `dplyr::group_split()` function which is a tidyverse version of `base::split()`.
+
+# Bootstrapping in parallel
+
+There are various ways we could run this in parallel with the future package. Let's start with a relatively verbose way of doing it by working with the future package directly. First, as an intermediate step, let's rewrite the above function to use `purrr::map()` and `purrr::dfr()` with anonymous functions:
+
+```{r}
+boot_biomass2 <- function(dat, reps = 500) {
+  dat %>% dplyr::group_split(year) %>% 
+    purrr::map(function(.x) bootstrap_one_year(.x, reps = reps)) %>% 
+    purrr::map_dfr(function(.x) .x)
+}
+```
+
+Remember that purrr includes a shortcut for this (`~` replaces `function(.x)` and the passed value is available as `.x`). Try converting to the shortcut syntax:
+
+```{r}
+boot_biomass3 <- function(dat, reps = 500) {
+  dat %>% dplyr::group_split(year) %>% 
+    purrr::map(~bootstrap_one_year(.x, reps = reps)) %>% # exercise
+    purrr::map_dfr(~.x) # exercise
+}
+```
+
+Let's prove to ourselves that these all do the same thing:
+
+```{r}
+set.seed(1)
+boot_biomass(d, reps = 50)
+set.seed(1)
+boot_biomass2(d, reps = 50)
+set.seed(1)
+boot_biomass3(d, reps = 50)
+```
+
+Now, we can do the same in parallel by using the `future::future()` and `future::value()` functions:
+
+```{r}
+boot_biomass_purrr_future <- function(dat, reps = 500) {
+  dat %>% dplyr::group_split(year) %>% 
+    purrr::map(~future(bootstrap_one_year(.x, reps = reps))) %>%
+    purrr::map_dfr(~ value(.x))
+}
+```
+
+It's a little bit ugly but it works:
+
+```{r}
+boot_biomass_purrr_future(d, reps = 50)
+```
+
+Let's look at two slightly cleaner ways of doing this. First is with the 'furrr' package, which is a drop-in replacement for many of the 'purrr' functions using the future package in the background for parallel processing:
+
+```{r}
+boot_biomass_furrr <- function(dat, reps = 500) {
+  dat %>% dplyr::group_split(year) %>% 
+    furrr::future_map_dfr(bootstrap_one_year, reps = reps)
+}
+boot_biomass_furrr(d, reps = 50)
+```
+
+And the second is to use the 'future.apply' package. This package has replacements for many apply functions. For example, `future.apply::future_lapply()` is a replacement for the `lapply()` function. Remember that `purrr::map()` is analogous to `lapply()`: it applies a function to multiple elements and returns a list.
+
+```{r}
+boot_biomass_future.apply <- function(dat, reps = 500) {
+  dat %>% dplyr::group_split(year) %>% 
+    future.apply::future_lapply(bootstrap_one_year, reps = reps) %>% 
+    dplyr::bind_rows()
+}
+boot_biomass_future.apply(d, reps = 50)
+```
+
+How do we know that our parallel functions actually saved us time? One quick way to check is with `system.time()` or the 'tictoc' package:
+
+```{r}
+tic("sequential")
+boot_biomass(d, reps = 500)
+toc()
+
+tic("purrr")
+boot_biomass_purrr_future(d, reps = 500)
+toc()
+
+tic("furrr")
+boot_biomass_furrr(d, reps = 500)
+toc()
+
+tic("future.apply")
+boot_biomass_future.apply(d, reps = 500)
+toc()
+```
+
+A more rigourous test would be with benchmarking. You've worked with this in an earlier lesson, so try filling within yourself. I recommend using a smaller number of bootstrap repetitions, say 24.
+
+```{r}
+b <- bench::mark(
+  sequential = boot_biomass(d, reps = 24), # exercise
+  future.apply = boot_biomass_future.apply(d, reps = 24), # exercise
+  purrr_futur = boot_biomass_purrr_future(d, reps = 24), # exercise
+  furrr = boot_biomass_furrr(d, reps = 24), # exercise
+  iterations = 10, check = FALSE)
+print(b)
+plot(b)
+```
+
+Why did we set the `iterations` and `check` argument explicitly? What would be an alternative to setting `check = FALSE`?
+
+# Exercise
+
+Try extending our above functions (e.g. `boot_biomass()`) so that it also works with multiple surveys. Then pick one of the above approaches to iterate over years and surveys in parallel.
+
+Here is the data for Hecate Strait, Queen Charlotte Sound, and West Coast Vancouver Island:
+
+```{r}
+d_multiple <- readRDS("data/pcod-syn-hs-qcs-wcvi.rds")
+glimpse(d_multiple)
+ggplot(d_multiple, aes(longitude, latitude, size = density_kgpm2, colour = survey)) +
+  geom_point() +
+  scale_size_area() +
+  facet_wrap(~year)
+```
+
+Write versions of the above functions to iterate over years and surveys in parallel. Save your output to an object named `b`. Check to make sure your parallel version is faster.
+
+```{r}
+boot_biomass2 <- function(dat, reps = 200) { # exercise
+  dat %>% dplyr::group_split(year, survey) %>% # exercise
+    purrr::map_dfr(bootstrap_one_year, reps = reps) # exercise
+} # exercise
+
+boot_biomass_future.apply2 <- function(dat, reps = 200) { # exercise
+  dat %>% dplyr::group_split(year, survey) %>% # exercise
+    future.apply::future_lapply(bootstrap_one_year, reps = reps) %>% # exercise
+    dplyr::bind_rows() # exercise
+}
+
+tic() # exercise
+b <- boot_biomass2(d_multiple, reps = 200) # exercise
+toc() # exercise
+b # exercise
+
+tic() # exercise
+b <- boot_biomass_future.apply2(d_multiple, reps = 200) # exercise
+toc() # exercise
+b # exercise
+```
+
+Assuming you saved your output to an object named `b`, you can plot it with the following code:
+
+```{r}
+ggplot(b, aes(year, est, ymin = lwr, ymax = upr)) +
+  geom_ribbon(alpha = 0.4) + 
+  geom_line() +
+  facet_wrap(~survey)
+```
+

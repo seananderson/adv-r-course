@@ -17,15 +17,7 @@ We will work with the [women in parliament data set](https://github.com/saghirb/
 ```{r}
 library(dplyr)
 library(ggplot2)
-wiptv <- readr::read_csv(here::here("data-raw", "wip.csv"), skip = 4)
-names(wiptv) <- tolower(make.names(names(wiptv)))
-wp <- wiptv %>%
-  tidyr::gather(key = YearC, value = pctWiP, dplyr::starts_with("X"), na.rm = TRUE) %>%
-  dplyr::mutate(year = readr::parse_number(YearC)) %>%
-  dplyr::select(-YearC, -indicator.name, -indicator.code, -country.code) %>%
-  dplyr::rename(percent_wip = pctWiP, country = country.name) %>%
-  dplyr::select(year, country, percent_wip)
-names(wp) <- gsub("\\.", "_", names(wp))
+d <- readRDS("data/wip.rds")
 ```
 
 Let's make a quick plot of the data to help understand it:

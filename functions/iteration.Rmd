@@ -1,0 +1,171 @@
+---
+title: "Iterating with lists and purrr"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(purrr)
+d <- readRDS("data/wip.rds")
+wip_dat <- split(d, d$country) %>% # ignore for now
+  map(~ .x$percent_wip) # ignore for now
+years <- split(d, d$country) %>% # ignore for now
+  map(~ .x$year) # ignore for now
+```
+
+```{r}
+map(wip_dat, mean)
+map_dbl(wip_dat, mean)
+map_chr(wip_dat, mean)
+```
+
+We can pass other arguments to our main function through the `...`:
+
+```{r}
+map_dbl(wip_dat, quantile)
+map_dbl(wip_dat, quantile, prob = 0.8)
+```
+
+Suppose we want to do something more complicated that isn't in an existing function. How do that? We write our own function!
+
+What if we want to calculate the mean women in parliament percentage for each country after dropping the lowest year?
+
+1. Write code that solves the problem for a real object
+
+```{r}
+vec <- wip_dat$Canada
+(sum(vec) - min(vec)) / (length(vec) - 1)
+
+vec <- wip_dat$`United States`
+(sum(vec) - min(vec)) / (length(vec) - 1)
+```
+
+2. Wrap the code in `function() {}` and try running it:
+
+```{r}
+vec <- wip_dat$Canada
+mean_wip <- function() {
+  (sum(vec) - min(vec)) / (length(vec) - 1)
+}
+mean_wip()
+```
+
+3. Add the name of the temporary object as an argument. Supply new values to use for each of the arguments.
+
+```{r}
+mean_wip <- function(vec) {
+  (sum(vec) - min(vec)) / (length(vec) - 1)
+}
+mean_wip(vec = wip_dat$Canada)
+mean_wip(vec = wip_dat$`United States`)
+```
+
+4. Change the argument name if desired:
+
+```{r}
+mean_wip <- function(x) {
+  (sum(x) - min(x)) / (length(x) - 1)
+}
+mean_wip(wip_dat$`United States`)
+```
+
+5. Iterate with your new function:
+
+```{r}
+map_dbl(wip_dat, mean_wip)
+```
+
+# Exercise
+
+- Calculate of the variance of the percentage of women in parliament for each country. Return the result as a numeric vector.
+- Write a function that calculates the range (maximum minus minimum value) of percentage of women in parliament for a single country. Apply it to Canada and Finland.
+- Apply your range function to all countries and return the result as a numeric vector. As a final step, sort the output from lowest to highest value.
+
+```{r}
+map_dbl(wip_dat, var) # exercise
+range_wip <- function(x) { # exercise
+  max(x) - min(x) # exercise
+} # exercise
+range_wip(wip_dat$Canada) # exercise
+range_wip(wip_dat$Finland) # exercise
+map_dbl(wip_dat, range_wip) # exercise
+map_dbl(wip_dat, range_wip) %>% sort() # exercise
+```
+
+# Iterating with multiple inputs
+
+```{r}
+map2(years, wip_dat, ~ lm(.y ~ .x))
+pmap(list(years, wip_dat), function(x, y) lm(y ~ x))
+```
+
+```{r}
+get_slope <- function(x, y) {
+  m <- lm(y ~ x)
+  coef(m)[[2]]
+}
+map2_dbl(years, wip_dat, get_slope)
+map2_dbl(years, wip_dat, ~ get_slope(.x, .y))
+map2_dbl(years, wip_dat, function(.x, .y) get_slope(.x, .y))
+
+map2_dbl(years, wip_dat, get_slope) %>% sort()
+map2_dbl(years, wip_dat, get_slope) %>%
+  sort() %>%
+  rev()
+```
+
+```{r}
+df <- data.frame(
+  x = c(1, 2, 5),
+  y = c(5, 4, 8)
+)
+map2_dbl(df$x, df$y, min)
+pmap_dbl(df, min)
+```
+
+```{r}
+df <- data.frame(
+  x = 1:3 + 0.1,
+  y = 3:1 - 0.1,
+  z = letters[1:3]
+)
+plus <- function(x, y) x + y
+plus2 <- function(x, y, ...) x + y
+pmap_dbl(df, plus2)
+```
+
+# Exercise
+
+- Calculate the slope of the percentage of women in parliament for each country but only for the years 2010 and after.
+- Make the 2010 an argument named `cutoff` and try passing it via the `...` with your `map()` function.
+- Rerun your calculation for all years 2005 and after.
+
+```{r}
+get_slope2 <- function(yrs, wip, cutoff = 2010) { # exercise
+  wip <- wip[yrs >= cutoff] # exercise
+  yrs <- yrs[yrs >= cutoff] # exercise
+  m <- lm(wip ~ yrs) # exercise
+  coef(m)[[2]] # exercise
+} # exercise
+map2_dbl(years, wip_dat, get_slope2) %>% sort() # exercise
+map2_dbl(years, wip_dat, get_slope2, cutoff = 2005) %>% sort() # exercise
+```
+
+# Next-level bonus question
+
+Was that too easy? If so, try the following next-level purrr exercise:
+
+- Using your function to get a slope for a given country and a given year cut off, use `map()` to also iterate over year thresholds of `seq(1990, 2010, 5)`.
+- Use `map()` to `sort()` the output from highest to lowest value (i.e. `rev()`).
+- Use `[`() to extract only the top 5 countries for each cut off.
+
+Yes, there are many other tidyverse ways to do this, but try to do it with purrr and base R functions as an exercise.
+
+```{r}
+map(seq(1990, 2010, 5), function(z) # exercise
+  map2_dbl(years, wip_dat, get_slope2, cutoff = z)) %>% # exercise
+  map(sort) %>%  # exercise
+  map(rev) %>%  # exercise
+  map(`[`, i = 1:5) # exercise
+```
+
