@@ -188,36 +188,67 @@ f <- future({
 value(f)
 ```
 
+# Loop examples with future and lists
+
+```{r}
+x <- list()
+for (i in 1:8) {
+  x[[i]] <- rnorm(100)
+}
+```
+
+```{r}
+y <- list()
+for (i in 1:8) {
+  y[[i]] <- future::future(rnorm(100))
+}
+y <- lapply(y, future::value)
+```
+
 # The future.apply package
 
 Likely a more useful way to use the future package for parallel processing in everyday coding, is via the future.apply package. The future.apply package provides replacements for many of the base R apply functions. For example, `future.apply::future_lapply()` is a replacement for the `lapply()` function. Remember that `purrr::map()` is analogous to `lapply()`: it applies a function to multiple elements and returns a list.
 
+We could replicate the previous example like this:
+
 ```{r}
-library(future.apply)
-library(tictoc)
-
-plan(multisession)
-
-x <- 1:1e4
-tic()
-p_lapply <- profvis::profvis({
-  y <- lapply(x, quantile, probs = 1:3/4)
-})
-toc()
-p_lapply
-
-tic()
-p_future_lapply <- profvis::profvis({
-  y <- future.apply::future_lapply(x, quantile, probs = 1:3/4)
-})
-toc()
-p_future_lapply
+future.apply::future_lapply(1:8, function(x) rnorm(100))
 ```
 
-We can pass global variables and packages if future has trouble figuring these out automatically via the `future.packages` and `future.globals` arguments to `future.apply::future_lapply()`.
+We can pass global variables and packages if future has trouble figuring these out automatically via the `future.packages` and `future.globals` arguments to `future.apply::future_lapply()`. Usually you shouldn't have to do that.
 
 # Exercise
 
-TODO
+Return to the women in parliament list-formatted data set:
 
-basic exercise with `future.apply::future_lapply` as a replacement for a loop.
+```{r}
+library(dplyr)
+d <- readRDS("data/wip.rds")
+wip_dat <- split(d, d$country) %>%
+  purrr::map(~ .x$percent_wip)
+wip_dat[1]
+wip_dat[2]
+```
+
+Try calculating the range of percentage of women in parliament for each country (maximum minus minimum value). 
+
+- Start by creating a function named `range_wip()` that does the calculation.
+- Apply your function via `purrr::map()` and then do the same via `future.apply::future_lapply()` to do the calculations in parallel.
+- For practice, re-write both to use an anonymous function.
+- Use the `bench::mark()` function to benchmark the parallel version against the serial version. Which is faster here. Why do you think that is?
+
+```{r}
+range_wip <- function(x) { # exercise
+  max(x) - min(x) # exercise
+}
+purrr::map(wip_dat, range_wip) # exercise
+future.apply::future_lapply(wip_dat, range_wip) # exercise
+purrr::map(wip_dat, ~ max(.x) - min(.x)) # exercise
+future.apply::future_lapply(wip_dat, function(x) max(x) - min(x)) # exercise
+
+b <- bench::mark(
+  future.apply::future_lapply(wip_dat, range_wip), # exercise
+  purrr::map(wip_dat, range_wip) # exercise
+)
+plot(b) # exercise
+```

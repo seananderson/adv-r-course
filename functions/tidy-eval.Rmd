@@ -1,0 +1,89 @@
+---
+title: "Tidy eval"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+d <- readRDS(here::here("data/wip.rds"))
+```
+
+```{r, error=TRUE}
+mean_wip <- function(df, by) {
+  df %>% 
+    group_by(by) %>% 
+    summarise(wip = mean(percent_wip))
+}
+d %>% mean_wip(by = year)
+#> Error: Column `by` is unknown
+```
+
+```{r}
+mean_wip <- function(df, by) {
+  df %>% 
+    group_by({{ by }}) %>% 
+    summarise(wip = mean(percent_wip))
+}
+d %>% mean_wip(by = year)
+d %>% mean_wip(by = country)
+```
+
+```{r}
+name <- "Sean"
+glue::glue("Hello! My name is {name}.")
+```
+
+```{r}
+mean_wip <- function(df, ...) {
+  df %>% 
+    group_by(...) %>% 
+    summarise(wip = mean(percent_wip))
+}
+d %>% mean_wip(year)
+d %>% mean_wip(country)
+```
+
+```{r}
+mean_wip <- function(df, by, name) {
+  df %>% 
+    group_by({{ by }}) %>% 
+    summarise({{ name }} := mean(percent_wip))
+}
+
+d %>% mean_wip(by = year, name = mean_by_year)
+d %>% mean_wip(by = country, name = mean_by_country)
+```
+
+```{r}
+mean_wip <- function(df, by, top = Inf) {
+  df %>% 
+    group_by({{ by }}) %>% 
+    summarise(wip = mean(percent_wip)) %>%
+    top_n(n = top, wt = wip) %>%
+    ggplot(aes({{ by }}, wip)) + 
+    geom_point()
+}
+
+d %>% mean_wip(by = year)
+d %>% mean_wip(by = country, top = 30) + coord_flip()
+```
+
+```{r}
+mean_wip <- function(df, by, top = Inf, arrange_by = NULL) {
+  out <- df %>% 
+    group_by({{ by }}) %>% 
+    summarise(wip = mean(percent_wip)) %>%
+    top_n(n = 30, wt = wip)
+  
+  if (is.character(pull(df, {{ by }}))) {
+    out <- mutate(out, {{ by }} := forcats::fct_reorder({{ by }}, wip))
+  }
+  
+  ggplot(out, aes({{ by }}, wip)) +
+    geom_point()
+}
+
+d %>% mean_wip(by = year)
+d %>% mean_wip(by = country, arrange_by = wip) + coord_flip()
+```

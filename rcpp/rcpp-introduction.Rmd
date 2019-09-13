@@ -1,0 +1,102 @@
+---
+title: "Rcpp introduction"
+output: html_document
+---
+
+```{r}
+library(Rcpp)
+
+evalCpp("2 + 2")
+
+evalCpp("Rcpp::rnorm(1, 0, 1)")
+
+one <- function() 1L
+
+cppFunction('int one() {
+  return 1;
+}')
+
+
+cppFunction('int add(int x, int y, int z) {
+  int sum = x + y + z;
+  return sum;
+}')
+
+# add works like a regular R function
+add
+
+add(1, 2, 3)
+```
+
+<!-- https://adv-r.hadley.nz/rcpp.html -->
+```{r}
+sourceCpp("rcpp/print.cpp")
+rcpp_rcout(c(1, 2))
+```
+
+
+<!-- https://thecoatlessprofessor.com/programming/cpp/unofficial-rcpp-api-documentation/ -->
+
+```{r}
+sumR <- function(x) {
+  sum(x)
+}
+sumR(c(1, 2, 3))
+
+sourceCpp("rcpp/global-R-function.cpp")
+sumC(c(1, 2, 3))
+
+sumR <- function(x) {
+  sum(x) + 9999
+}
+sumC(c(1, 2, 3))
+```
+
+# Exercise
+
+I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translated into C++ for use with Rcpp. Name your new function `ricker_rcpp()`.
+
+Start by verifying that you get the same answer out of both functions if you start with the same random number generator seed.
+
+Benchmark your Rcpp version against R version. Start with a time series of length 100. Then try it with a time series of length 1e4. How do they compare and why?
+
+```{r}
+source(here::here("rcpp/ricker.R"))
+sourceCpp(here::here("rcpp/ricker-complete.cpp")) # exercise
+
+set.seed(42) # exercise
+ricker_r(10) # exercise
+set.seed(42) # exercise
+ricker_cpp(10) # exercise
+
+bench::mark( # exercise
+  ricker_r(100), # exercise
+  ricker_cpp(100), # exercise
+  check = FALSE # exercise
+) # exercise
+bench::mark( # exercise
+  ricker_r(1e4), # exercise
+  ricker_cpp(1e4), # exercise
+  check = FALSE # exercise
+) # exercise
+```
+
+Bonus step: If you got this far (great!), try using `purrr::pmap()` or `purrr:map_dfr()` to run your `ricker_cpp()` function over a series of r and K values for 10 iterations each. Plot the timeseries that you generate.
+
+Hint 1: Start with `expand.grid()` or `tidyr::crossing()`.
+Hint 2: `pmap()` takes a list as input and a data frame is also a list.
+Hint 3: Except for optional linebreaks, you can do this whole bonus exercise in 3 lines of code!
+
+```{r}
+df <- expand.grid(i = 1:10, r = c(0.8, 1.3, 1.9), K = c(5, 15)) # exercise
+
+out <- purrr::pmap_dfr(df, function(r, K, i) # exercise
+  data.frame(time = 1:20, i = i, r = r, K = K, # exercise
+    y = ricker_cpp(r, K, n = 20))) # exercise
+
+library(ggplot2) # exercise
+ggplot(out, aes(time, y, group = i)) +  # exercise
+  geom_line() + # exercise
+  facet_grid(r ~ K) # exercise
+```
+

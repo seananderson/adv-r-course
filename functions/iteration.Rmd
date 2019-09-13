@@ -153,10 +153,10 @@ map2_dbl(years, wip_dat, get_slope2, cutoff = 2005) %>% sort() # exercise
 
 # Next-level bonus question
 
-Was that too easy? If so, try the following next-level purrr exercise:
+Was that too easy? If so, try the following next-level purrr exercise in one set of pipes:
 
 - Using your function to get a slope for a given country and a given year cut off, use `map()` to also iterate over year thresholds of `seq(1990, 2010, 5)`.
-- Use `map()` to `sort()` the output from highest to lowest value (i.e. `rev()`).
+- Use `map()` to `sort()` the output from highest to lowest value (i.e. also use `rev()`).
 - Use `[`() to extract only the top 5 countries for each cut off.
 
 Yes, there are many other tidyverse ways to do this, but try to do it with purrr and base R functions as an exercise.
