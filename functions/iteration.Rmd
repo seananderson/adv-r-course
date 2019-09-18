@@ -77,17 +77,19 @@ map_dbl(wip_dat, mean_wip)
 
 # Exercise
 
-- Calculate of the variance of the percentage of women in parliament for each country. Return the result as a numeric vector.
+- Calculate the variance of the percentage of women in parliament for each country. Return the result as a numeric vector.
 - Write a function that calculates the range (maximum minus minimum value) of percentage of women in parliament for a single country. Apply it to Canada and Finland.
 - Apply your range function to all countries and return the result as a numeric vector. As a final step, sort the output from lowest to highest value.
 
 ```{r}
 map_dbl(wip_dat, var) # exercise
+
 range_wip <- function(x) { # exercise
   max(x) - min(x) # exercise
 } # exercise
 range_wip(wip_dat$Canada) # exercise
 range_wip(wip_dat$Finland) # exercise
+
 map_dbl(wip_dat, range_wip) # exercise
 map_dbl(wip_dat, range_wip) %>% sort() # exercise
 ```
@@ -151,7 +153,7 @@ map2_dbl(years, wip_dat, get_slope2) %>% sort() # exercise
 map2_dbl(years, wip_dat, get_slope2, cutoff = 2005) %>% sort() # exercise
 ```
 
-# Next-level bonus question
+# Bonus question
 
 Was that too easy? If so, try the following next-level purrr exercise in one set of pipes:
 
