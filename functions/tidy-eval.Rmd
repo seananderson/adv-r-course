@@ -1,15 +1,47 @@
 ---
-title: "Tidy eval"
+title: "Tidy evaluation"
 output: html_document
 ---
 
-```{r}
+# Goals
+
+- Understand at a basic level what tidy evaluation is
+- Be able to recognize when it is needed in a function that uses a tidyverse function
+- Practice passing arguments for tidy evaluation using `{{ }}`
+
+# Background and motivation
+
+Tidy evaluation is the tidyverse implementation of "non-standard evaluation" in R. Non-standard valuation is what lets you write:
+
+```{r, eval=FALSE}
+library(ggplot2)
+```
+
+Rather than having to write:
+
+```{r, eval=FALSE}
+library("ggplot2")
+```
+
+R guesses at your intention about whether it should treat `ggplot2` as an object or as text here.
+
+In dplyr, non-standard evaluation, or more specifically, tidy evaluation, is used extensively to reduce typing and create elegant code:
+
+```{r, eval=FALSE}
+d %>% group_by(column1) %>% summarise(a = sum(b))
+```
+
+Note that `column1` and `b` refer to column names and dplyr figures that out rather than looking for objects `column1` and `b`.
+
+While this can make for elegant code, can also introduce conundrums if you want to write some types of functions that make use of functions from the tidyverse that use tidyevaluation.
+
+For example, imagine we try writing the following function to group by some call them and calculate the mean within each group:
+
+```{r, error=TRUE}
 library(dplyr)
 library(ggplot2)
 d <- readRDS(here::here("data/wip.rds"))
-```
 
-```{r, error=TRUE}
 mean_wip <- function(df, by) {
   df %>% 
     group_by(by) %>% 
@@ -18,6 +50,14 @@ mean_wip <- function(df, by) {
 d %>% mean_wip(by = year)
 #> Error: Column `by` is unknown
 ```
+
+# Tidy evaluation to the rescue
+
+Until recently the solution to getting around this was a bit convoluted and involved `quo()` `enquo()`, and things like `!!` and `!!!`!
+
+Recent modifications to tidy evalation make a solution quite simple and involve wrapping the argument that you want to pass through to tidy valuation with `{{ }}`.
+
+For example:
 
 ```{r}
 mean_wip <- function(df, by) {
@@ -29,10 +69,14 @@ d %>% mean_wip(by = year)
 d %>% mean_wip(by = country)
 ```
 
+The syntax is inspired by the glue package:
+
 ```{r}
 name <- "Sean"
 glue::glue("Hello! My name is {name}.")
 ```
+
+Of course another solution is to use `...`:
 
 ```{r}
 mean_wip <- function(df, ...) {
@@ -44,6 +88,10 @@ d %>% mean_wip(year)
 d %>% mean_wip(country)
 ```
 
+But this means that you can't use `...` for other purposes in your function and it means that your function will silently eat up incorrect arguments.
+
+There's one other situation you may find yourself in that requires one more tidy evaluation syntax. Imagine you wanted to pass three or function the name of the new column. To do that we need to also use `:=`: 
+
 ```{r}
 mean_wip <- function(df, by, name) {
   df %>% 
@@ -54,6 +102,10 @@ mean_wip <- function(df, by, name) {
 d %>% mean_wip(by = year, name = mean_by_year)
 d %>% mean_wip(by = country, name = mean_by_country)
 ```
+
+For nearly all cases that's all you need to know now about tidy evaluation. Note that you don't need to use these tricks for the vast majority of time that you might use dplyr inside a function, but sometimes I'll run into these situations.
+
+ggplot2 now also uses tidy evaluation. For example, imagine we wanted to plot the output of our data manipulation and change what is on the x axis:
 
 ```{r}
 mean_wip <- function(df, by, top = Inf) {
@@ -69,12 +121,14 @@ d %>% mean_wip(by = year)
 d %>% mean_wip(by = country, top = 30) + coord_flip()
 ```
 
+Just to complete the solution, here's an example where we also reorder the countries in the plot:
+
 ```{r}
-mean_wip <- function(df, by, top = Inf, arrange_by = NULL) {
+mean_wip <- function(df, by, top = 30, arrange_by = NULL) {
   out <- df %>% 
     group_by({{ by }}) %>% 
     summarise(wip = mean(percent_wip)) %>%
-    top_n(n = 30, wt = wip)
+    top_n(n = top, wt = wip)
   
   if (is.character(pull(df, {{ by }}))) {
     out <- mutate(out, {{ by }} := forcats::fct_reorder({{ by }}, wip))
@@ -86,4 +140,34 @@ mean_wip <- function(df, by, top = Inf, arrange_by = NULL) {
 
 d %>% mean_wip(by = year)
 d %>% mean_wip(by = country, arrange_by = wip) + coord_flip()
+```
+
+# Exercise
+
+Create a function that takes the built-in `mtcars` data set and let you group by an arbitrary column and calculate the median value by some other arbitrary column. Use `group_by()` and `summarize()`.
+
+Test your function on a variety of columns. For example, what is the median miles per gallon (`mpg`) for the various number of cylinders (`cyl`)?
+
+Extension: if that was easy, try allowing your function to change the name of the summarized column based on an argument your function.
+
+```{r}
+glimpse(mtcars)
+```
+
+```{r}
+group_mtcars <- function(by, sum_column) { # exercise
+  mtcars %>% # exercise
+    group_by({{ by }}) %>%  # exercise
+     summarise(median = median({{ sum_column }})) # exercise
+}
+
+group_mtcars(cyl, mpg) # exercise
+
+group_mtcars <- function(by, sum_column, name) { # exercise
+  mtcars %>% # exercise
+    group_by({{ by }}) %>%  # exercise
+     summarise({{ name }} := median({{ sum_column }})) # exercise
+}
+
+group_mtcars(cyl, sum_column = mpg, name = my_name) # exercise
 ```
