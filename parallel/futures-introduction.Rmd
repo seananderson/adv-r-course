@@ -43,7 +43,7 @@ All we have to do is substitute the `%<-%` operator from the future package and 
 
 ```{r}
 library(future)
-plan(multiprocess)
+plan(multisession)
 a %<-% slow_sum(1:1e7)
 b %<-% slow_sum(1e7:2e7)
 y <- a + b
