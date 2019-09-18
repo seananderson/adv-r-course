@@ -3,39 +3,79 @@ title: "Rcpp introduction"
 output: html_document
 ---
 
+The most basic way we can evaluate C++ code is via `evalCpp()`. This generally isn't too useful except for testing:
+
 ```{r}
 library(Rcpp)
 
-evalCpp("2 + 2")
-
+evalCpp("1 + 1")
 evalCpp("Rcpp::rnorm(1, 0, 1)")
+```
 
-one <- function() 1L
+The next most basic way we can create a C++ function is via the `cppFunction()` function. This is useful for very simple functions where it's not worth the effort to create a separate file.
 
-cppFunction('int one() {
+For example, take the following R function:
+
+```{r}
+one_r <- function() {
+  1L
+}
+one_r()
+```
+
+Remember that `1L` explicitly means an integer.
+
+We can create the same function with Rcpp:
+
+```{r}
+cppFunction('int one_cpp() {
   return 1;
 }')
+one_cpp()
+```
 
+Note the differences:
 
+- we have to declare the type of the output (`int`)
+- we have to explicitly use a `return` statement
+- we have to end each line of code with a `;`
+- we don't use the `function()` R syntax
+- 1 is implicitly an integer in C++ (`1.0` or `1.` would be a real number)
+
+We can extend the above example to take multiple arguments:
+
+```{r}
 cppFunction('int add(int x, int y, int z) {
   int sum = x + y + z;
   return sum;
 }')
 
-# add works like a regular R function
 add
-
 add(1, 2, 3)
 ```
 
-<!-- https://adv-r.hadley.nz/rcpp.html -->
+We can print out values or error messages using `Rcpp::Rcout` and `Rcpp::Rcerr`. Take a look at the example in `rcpp/print.cpp`:
+
+```{r}
+readLines("rcpp/print.cpp")
+```
+
+
 ```{r}
 sourceCpp("rcpp/print.cpp")
 rcpp_rcout(c(1, 2))
 ```
 
 
-<!-- https://thecoatlessprofessor.com/programming/cpp/unofficial-rcpp-api-documentation/ -->
+
+
+We can make use of R functions---even functions we write in our global environment---inside Rcpp. To do that we can capture our function from our global environment and apply it:
+
+```
+  Environment my_env = Environment::global_env();
+  Function sumR = my_env["sumR"];
+  return sumR(x);
+```
 
 ```{r}
 sumR <- function(x) {
@@ -45,16 +85,84 @@ sumR(c(1, 2, 3))
 
 sourceCpp("rcpp/global-R-function.cpp")
 sumC(c(1, 2, 3))
+```
 
+As proof, let's modify our `sumR()` function to do something ridiculous and run our C++ function again:
+
+```{r}
 sumR <- function(x) {
   sum(x) + 9999
 }
 sumC(c(1, 2, 3))
 ```
 
+Of course, our C++ function won't be any faster than the R one, but sometimes this can get you out of having to code something that is tricky but fast in R.
+
 # Exercise
 
-I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translated into C++ for use with Rcpp. Name your new function `ricker_rcpp()`.
+1. What is wrong with the following C++ function? Can you fix it?
+
+(Don't be scared by the verbose C++ error messages!)
+
+```{r, eval=FALSE}
+cppFunction('
+int add(int x, int y) {
+  z = x + y;
+  return z;
+}
+')
+```
+
+2. What is wrong with the following C++ function? Can you fix it?
+
+```{r, eval=FALSE}
+cppFunction('
+double f1(NumericVector x) {
+  int n = x.size();
+  double y = 0.0;
+
+  for (int i = 0; i < n; ++i) {
+    y += x[i] / n;
+  }
+  return y;
+}
+')
+```
+
+3. What is the line `y += x[i] / n;` doing?
+
+4. What is the above function doing? What R function does this resemble?
+
+5. Can you implement `cumprod()` in Rcpp? I've started below for you:
+
+```{r, eval=FALSE}
+cppFunction('
+NumericVector cumprod_cpp(NumericVector x) {
+  int n = x.size();
+  NumericVector y(n);
+
+  // Do the calculations here:
+  // Note that there are multiple ways to do this.
+  // You may not use the same number of lines.
+  
+  for (int i = 0; i < n; ++i) { // exercise
+    if (i == 0) { // exercise
+      y[i] = x[i]; // exercise
+    } else { // exercise
+      y[i] = y[i-1] * x[i]; // exercise
+    } // exercise
+  } // exercise
+  
+  return y;
+}
+')
+cumprod_cpp(c(1, 2, 3, 4))
+cumprod(c(1, 2, 3, 4))
+```
+
+# Exercise
+
+I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translate it into C++ for use with Rcpp. Name your new function `ricker_rcpp()`.
 
 Start by verifying that you get the same answer out of both functions if you start with the same random number generator seed.
 
@@ -100,3 +208,7 @@ ggplot(out, aes(time, y, group = i)) +  # exercise
   facet_grid(r ~ K) # exercise
 ```
 
+# More reading
+
+- <https://adv-r.hadley.nz/rcpp.html>
+- <https://thecoatlessprofessor.com/programming/cpp/unofficial-rcpp-api-documentation/>
