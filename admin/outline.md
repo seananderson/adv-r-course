@@ -12,9 +12,9 @@ Participants will be expected to have reviewed a subset of the Foundations secti
 
 # Course topics
 
-Topics that I intend to cover include the following, but are open to some modification based on input from workshop participants beforehand.
+# Day 1: Functions and functional programming
 
-# Introduction and foundations refresher
+## Introduction and foundations refresher
 
 Goals:
 
@@ -23,7 +23,7 @@ Goals:
 - Review any questions people had about the exercises in those sections.
 - Make sure everyone is warmed up with R, engaged, and familiar with their neighbors.
 
-# Functions
+## Functions
   
 Goals:
 
@@ -34,7 +34,7 @@ Goals:
 - Be able to use errors, warnings, and `on.exit()`.
 - Be able to identify characteristics of well-written functions (purpose, naming, length, local vs. global variables).
 
-# Debugging functions
+## Debugging functions
 
 Goals:
 
@@ -45,7 +45,15 @@ Goals:
 - Practice debugging basic functions.
 - Learn to debug a function from an installed R package.
 
-# Apply functions and the purrr package
+## Tidy evaluation
+
+Goals:
+
+- Gain a basic understanding of what tidy evaluation is.
+- Understand when tidy evaluation is necessary or useful.
+- Understand how to use the basics of tidy evaluation when writing functions that use dplyr.
+
+## Functional programming: iterating with functions and the purrr package
 
 Goals:
 
@@ -56,15 +64,17 @@ Goals:
 - Become familiar with other multi-input purrr functions: `purrr::map2()`,`purrr::pmap()`.
 - Become aware of the breadth of other functions available in purrr (e.g. `purrr::walk()`, `purrr::pluck()`)
 
-# List-column data frames and other split, apply, combine strategies
+## List-column data frames and other split, apply, combine strategies
 
 Goals:
 
 - Understand what a list-column data frame is and why it can be useful.
 - Gain experience using list-column data frames for basic computation.
-- Become aware of other "split, apply, combine" strategies
+- Become aware of other "split, apply, combine" strategies.
 
-# Performance: profiling
+# Day 2: Performance
+
+## Profiling
 
 Goals:
 
@@ -74,7 +84,7 @@ Goals:
 
 \clearpage
 
-# Performance: benchmarking
+## Benchmarking
 
 Goals:
 
@@ -82,7 +92,7 @@ Goals:
 - Gain familiarity with using the bench package.
 - Practice benchmarking some R functions.
 
-# Performance: parallel processing
+## Parallel processing
 
 Goals:
 
@@ -91,7 +101,7 @@ Goals:
 - Gain a broad overview of the available parallel processing options in R.
 - Understand a basic example with the foreach package.
 - Become particularly familiar with the future and future.apply packages.
-- Understand the available `future::plan()`s: `sequential`, 
+- Gain an OVERVIEW OF the available `future::plan()`s: `sequential`, 
   `transparent`, `multiprocess`, `multisession`, `multicore`. 
   Know that `cluster` and `remote` exist.
 - Understand a basic future example.
@@ -100,7 +110,7 @@ Goals:
 - Understand a basic example of integrating future with dplyr and pipes.
 - Understand how to benchmark parallel vs. sequential code.
 
-# Performance: Rcpp
+## Rcpp
 
 Goals:
 
