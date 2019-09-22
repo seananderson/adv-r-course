@@ -138,9 +138,39 @@ map_dbl(wip_dat, range_wip) # exercise
 map_dbl(wip_dat, range_wip) %>% sort() # exercise
 ```
 
+# Exercise (reading multiple data files with purrr)
+
+Here's a character vector with 3 .csv files to be read in.
+
+```{r}
+f <- here::here("data-raw",
+  c("The_Fellowship_Of_The_Ring.csv", 
+    "The_Return_Of_The_King.csv", 
+    "The_Two_Towers.csv"
+  ))
+```
+
+Notice how I used `here::here()` and what that is doing here.
+
+Sometimes, `list.files()` is useful for creating a character vector of filenames.
+
+For example:
+
+```{r}
+list.files(here::here("data-raw"), full.names = TRUE, 
+  pattern = "^The")
+```
+
+Use `map_df()` to read all three files in and bind them into a data frame in one line of code. Try with `readr::read_csv` and try with `read.csv` while passing the option `stringsAsFactors = FALSE`.
+
+```{r}
+map_df(f, readr::read_csv) # exercise
+map_df(f, read.csv, stringsAsFactors = FALSE) # exercise
+```
+
 # Anonymous functions
 
-For short function sometimes is not worth naming your function. Instead we can you something called anonymous functions.
+For short functions, sometimes it's not worth naming your function. Instead we can use something called anonymous functions.
 
 As an example, we could rewrite our calculations above that take the mean women in parliament percentage for each country after dropping the lowest year using an anonymous function:
 
@@ -148,7 +178,7 @@ As an example, we could rewrite our calculations above that take the mean women 
 map_dbl(wip_dat, function(x) (sum(x) - min(x)) / (length(x) - 1))
 ```
 
-`function(x) (sum(x) - min(x)) / (length(x) - 1)` exists internally but does not have a name. It is an anonymous function. Usually they should be short, ideally fitting on 1 or maybe 2 lines.
+`function(x) (sum(x) - min(x)) / (length(x) - 1)` exists internally but does not have a name. It is an anonymous function. Usually these should be short, ideally fitting on 1 or maybe 2 lines.
 
 purrr has a shortcut for anonymous functions because they are a very common and useful way of working:
 
@@ -160,17 +190,14 @@ If you are collaborating with people who haven't used purrr, they might find thi
 
 # Iterating with multiple inputs
 
-So far we've only worked with a single input argument in our functional programming. Often that's all you need, but sometimes you need multiple inputs.
+So far we've only worked with a single input argument. Sometimes you need multiple inputs.
 
-purrr contains `map2` variants of its map functions that our specialized for 2 inputs and `pmap` (p = parallel) variants that work with an unlimited number of inputs. 
-
-Note this is not parallel processing on multiple cores, this is parallel in the sense of the `pmin()` or `pmax()` functions.
+purrr contains `map2` variants of its map functions that our specialized for 2 inputs and `pmap` (p = parallel) variants that work with an unlimited number of inputs. Note this is not parallel processing on multiple cores, this is parallel in the sense of iterating over multiple arguments in parallel.
 
 The `map2()` functions create named inputs of `.x` and `.y` for the first and second arguments. For example, let's fit a linear regression to the women in parliament data over time for each country (we will use an anonymous function):
 
 ```{r}
 map2(years, wip_dat, ~ lm(.y ~ .x))
-map2(years, wip_dat, function(.x, .y) lm(.y ~ .x)) # equivalent
 ```
 
 If instead we wanted to use the more generic `pmap()`, we could do it like this:
@@ -292,7 +319,7 @@ Take 2 minutes to skim through the help for purrr:
 help(package = "purrr")
 ```
 
-and try to find 5 interesting functions. Think about when you might use those in how they would be helpful.
+and try to find 3-5 interesting functions. Think about when you might use those and how they would be helpful.
 
 Take another couple minutes to discuss what you found with your partner.
 

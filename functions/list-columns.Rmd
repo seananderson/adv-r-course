@@ -3,12 +3,11 @@ title: "List-column data frames"
 output: html_document
 ---
 
-# List-column data frames
+# Goals
 
-Goals:
 - Understand what a list-column data frame is and why it can be useful.
 - Gain experience using list-column data frames for basic computation.
-- Build a list-column from scratch, with `tidyr::nest()`, and with `dplyr::summarize()`.
+- Build a list-column from scratch with `tidyr::nest()`.
 
 # Data set
 
