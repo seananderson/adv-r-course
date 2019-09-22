@@ -3,6 +3,19 @@ title: "Functional programming and iterating with lists and purrr"
 output: html_document
 ---
 
+# Goals
+
+- Be able to explain what "apply" functions are and why they are useful.
+- Be able to apply a basic function to a list or vector with `purrr::map()`.
+- Understand what anonymous functions are and where they are useful.
+- Gain an overview of the `purrr::map()` output variants and what they do. `purrr::map_dbl()` etc.
+- Become familiar with other multi-input purrr functions: `purrr::map2()`,`purrr::pmap()`.
+- Become aware of the breadth of other functions available in purrr (e.g. `purrr::walk()`, `purrr::pluck()`)
+
+# An introduction to iterating with purrr
+
+First read in the following data set:
+
 ```{r}
 library(dplyr)
 library(purrr)
@@ -13,8 +26,37 @@ years <- split(d, d$country) %>% # ignore for now
   map(~ .x$year) # ignore for now
 ```
 
+These data represent the percentage of women in parliament for various countries over time:
+
+```{r}
+head(d)
+```
+
+I have converted the data frame into 2 lists split by country for some exercises:
+
+```{r}
+wip_dat[1]
+wip_dat[[1]]
+years[1]
+```
+
+If we wanted to calculate the mean for certain country, we could do it like this:
+
+```{r}
+mean(wip_dat[[1]])
+```
+
+`purrr::map()` let us iterate over all the elements of the last and apply our function:
+
 ```{r}
 map(wip_dat, mean)
+```
+
+We are now "functional programming" because one of the arguments to the function `map()` is another function!
+
+`purrr::map()` returns a list but there are other "type stable" functions within purrr to return different object types. For example:
+
+```{r}
 map_dbl(wip_dat, mean)
 map_chr(wip_dat, mean)
 ```
@@ -22,9 +64,11 @@ map_chr(wip_dat, mean)
 We can pass other arguments to our main function through the `...`:
 
 ```{r}
-map_dbl(wip_dat, quantile)
-map_dbl(wip_dat, quantile, prob = 0.8)
+map(wip_dat, quantile)
+map(wip_dat, quantile, prob = 0.8)
 ```
+
+# Functional programming with our own functions
 
 Suppose we want to do something more complicated that isn't in an existing function. How do that? We write our own function!
 
@@ -238,3 +282,18 @@ map(seq(1990, 2010, 5), function(z) # exercise
   map(`[`, i = 1:5) # exercise
 ```
 
+# Diving deeper into purrr
+
+purrr has a lot of helpful functions for working with lists beyond the `map()` family of functions.
+
+Take 2 minutes to skim through the help for purrr:
+
+```{r}
+help(package = "purrr")
+```
+
+and try to find 5 interesting functions. Think about when you might use those in how they would be helpful.
+
+Take another couple minutes to discuss what you found with your partner.
+
+If you aren't sure where to start, take a look at `purrr::walk()` and `purrr::pluck()`.
