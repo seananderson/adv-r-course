@@ -3,7 +3,9 @@ title: "Rcpp introduction"
 output: html_document
 ---
 
-The most basic way we can evaluate C++ code is via `evalCpp()`. This generally isn't too useful except for testing:
+Rcpp let's is easily integrate C++ code with R. C++ is far more complicated to code in than R but it is blazing fast. In some situations it's well worth the extra trouble. The most common scenarios where it's worth the trouble is when code can't be vectorized because it builds on itself (e.g. simulations) or when some piece of code needs to be called millions of times.
+
+The most basic way we can evaluate C++ code is via `Rcpp::evalCpp()`. This generally isn't too useful except for testing:
 
 ```{r}
 library(Rcpp)
@@ -12,7 +14,13 @@ evalCpp("1 + 1")
 evalCpp("Rcpp::rnorm(1, 0, 1)")
 ```
 
-The next most basic way we can create a C++ function is via the `cppFunction()` function. This is useful for very simple functions where it's not worth the effort to create a separate file.
+Those will take a couple seconds to run the first time because C++ code needs to be compiled to be run.
+
+Try running the above code again. Was it still slow? Why?
+
+Note in the second case we are using one of the functions built into the Rcpp C++ library that mimics the R function.
+
+The next most basic way we can create a C++ function is via the `Rcpp::cppFunction()` function. This is useful for very simple functions when it's not worth the effort to breaker code out into a separate .cpp file.
 
 For example, take the following R function:
 
@@ -23,7 +31,7 @@ one_r <- function() {
 one_r()
 ```
 
-Remember that `1L` explicitly means an integer.
+Why did we use `1L` instead of `1`?
 
 We can create the same function with Rcpp:
 
@@ -54,35 +62,46 @@ add
 add(1, 2, 3)
 ```
 
-We can print out values or error messages using `Rcpp::Rcout` and `Rcpp::Rcerr`. Take a look at the example in `rcpp/print.cpp`:
+Note that we also had to declare the type of the variable `sum` before assigning a value to it.
 
-```{r}
-readLines("rcpp/print.cpp")
+For future examples we will use the `Rcpp::sourceCpp()` function, which lets us write our C++ code in a separate .cpp file and source it. This gives us syntax highlighting and sometimes makes the compilation errors more informative.
+
+The only "trick" is that we have to put the following header at the top:
+
+```
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// [[Rcpp::export]]
 ```
 
+We can print out values or error messages using `Rcpp::Rcout` and `Rcpp::Rcerr`. Take a look at the example in `rcpp/print.cpp`:
+
+(Hint: in RStudio, put your cursor on the file name and press F2.)
 
 ```{r}
 sourceCpp("rcpp/print.cpp")
 rcpp_rcout(c(1, 2))
 ```
 
-
-
-
-We can make use of R functions---even functions we write in our global environment---inside Rcpp. To do that we can capture our function from our global environment and apply it:
-
-```
-  Environment my_env = Environment::global_env();
-  Function sumR = my_env["sumR"];
-  return sumR(x);
-```
+We can make use of R functions—even functions we write in our global environment—inside Rcpp. To do that we can capture our function from our global environment and apply it:
 
 ```{r}
 sumR <- function(x) {
   sum(x)
 }
 sumR(c(1, 2, 3))
+```
 
+Now, in our C++ file we will add:
+
+```
+Environment my_env = Environment::global_env();
+Function sumR = my_env["sumR"];
+return sumR(x);
+```
+
+```{r}
 sourceCpp("rcpp/global-R-function.cpp")
 sumC(c(1, 2, 3))
 ```
@@ -98,7 +117,7 @@ sumC(c(1, 2, 3))
 
 Of course, our C++ function won't be any faster than the R one, but sometimes this can get you out of having to code something that is tricky but fast in R.
 
-# Exercise
+# Exercises 1
 
 1. What is wrong with the following C++ function? Can you fix it?
 
@@ -160,17 +179,17 @@ cumprod_cpp(c(1, 2, 3, 4))
 cumprod(c(1, 2, 3, 4))
 ```
 
-# Exercise
+# Exercise 2
 
-I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translate it into C++ for use with Rcpp. Name your new function `ricker_rcpp()`.
+I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translate it into C++ for use with Rcpp. Name your new function `ricker_rcpp()`. I've started for you in `rcpp/ricker.cpp`.
 
-Start by verifying that you get the same answer out of both functions if you start with the same random number generator seed.
+Verify that you get the same answer out of both functions if you start with the same random number generator seed (e.g., `set.seed(42)`).
 
-Benchmark your Rcpp version against R version. Start with a time series of length 100. Then try it with a time series of length 1e4. How do they compare and why?
+Benchmark your Rcpp version against R version using `bench::mark()`. Start with a time series of length 100. Then try it with a time series of length 1e4. How do they compare and why?
 
 ```{r}
 source(here::here("rcpp/ricker.R"))
-sourceCpp(here::here("rcpp/ricker-complete.cpp")) # exercise
+sourceCpp(here::here("rcpp/ricker.cpp"))
 
 set.seed(42) # exercise
 ricker_r(10) # exercise
@@ -189,23 +208,25 @@ bench::mark( # exercise
 ) # exercise
 ```
 
-Bonus step: If you got this far (great!), try using `purrr::pmap()` or `purrr:map_dfr()` to run your `ricker_cpp()` function over a series of r and K values for 10 iterations each. Plot the timeseries that you generate.
+# Exercise 3
 
-Hint 1: Start with `expand.grid()` or `tidyr::crossing()`.
-Hint 2: `pmap()` takes a list as input and a data frame is also a list.
-Hint 3: Except for optional linebreaks, you can do this whole bonus exercise in 3 lines of code!
+Take your file `rcpp/ricker.cpp` and copy its contents into `rcpp/ricker-df.cpp`. Edit the end of your function so that it returns a data frame instead of a numeric vector. Make your data frame include the columns year (`Rcpp::seq(1, n)`), `x` (for the simulated population density), and a column for each parameter.
 
 ```{r}
-df <- expand.grid(i = 1:10, r = c(0.8, 1.3, 1.9), K = c(5, 15)) # exercise
+sourceCpp(here::here("rcpp/ricker-df.cpp"))
+ricker_cpp(10)
+```
 
-out <- purrr::pmap_dfr(df, function(r, K, i) # exercise
-  data.frame(time = 1:20, i = i, r = r, K = K, # exercise
-    y = ricker_cpp(r, K, n = 20))) # exercise
+Bonus step: If you got this far (great!), try using `purrr:pmap_dfr()` to run your `ricker_cpp()` function over a series of r and K values. Plot the timeseries that you generate.
 
-library(ggplot2) # exercise
-ggplot(out, aes(time, y, group = i)) +  # exercise
-  geom_line() + # exercise
-  facet_grid(r ~ K) # exercise
+Hint 1: `purrr:pmap_dfr()` takes a list as input and a data frame is also a list.
+Hint 2: Except for optional linebreaks, you can do this whole bonus exercise in 2 additional lines of code!
+
+```{r}
+library(ggplot2)
+df <- expand.grid(n = 500, r = c(0.8, 1.3, 1.9), K = c(5, 15))
+out <- purrr::pmap_dfr(df, ricker_cpp) # exercise
+ggplot(out, aes(year, x)) + geom_line() + facet_grid(r ~ K) # exercise
 ```
 
 # More reading
