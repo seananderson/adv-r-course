@@ -5,9 +5,9 @@ output: html_document
 
 # Goals
 
-- Understand at a basic level what tidy evaluation is
-- Be able to recognize when it is needed in a function that uses a tidyverse function
-- Practice passing arguments for tidy evaluation using `{{ }}`
+- Gain a basic understanding of what tidy evaluation is.
+- Understand when tidy evaluation is necessary or useful.
+- Understand how to use the basics of tidy evaluation when writing functions that use dplyr.
 
 # Background and motivation
 
