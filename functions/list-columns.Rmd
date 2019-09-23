@@ -16,7 +16,7 @@ We will work with the [women in parliament data set](https://github.com/saghirb/
 ```{r}
 library(dplyr)
 library(ggplot2)
-d <- readRDS("data/wip.rds")
+wp <- readRDS(here::here("data/wip.rds"))
 ```
 
 Let's make a quick plot of the data to help understand it:

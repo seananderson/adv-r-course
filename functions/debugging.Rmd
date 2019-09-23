@@ -66,7 +66,7 @@ ggplot(mtcars, aes(mpg, cyl)) + geom_point()
 
 Separately, use `debugonce()` to step into the last internal function used in `ggplot2::ggplot()`. Note that you will have to use `:::`.
 
-```{r}
+```{r, eval=FALSE}
 debugonce(ggplot2:::set_last_plot) # exercise
 ggplot(mtcars, aes(mpg, cyl)) + geom_point()
 ```

@@ -223,7 +223,7 @@ Return to the women in parliament list-formatted data set:
 
 ```{r}
 library(dplyr)
-d <- readRDS("data/wip.rds")
+d <- readRDS(here::here("data/wip.rds"))
 wip_dat <- split(d, d$country) %>%
   purrr::map(~ .x$percent_wip)
 wip_dat[1]

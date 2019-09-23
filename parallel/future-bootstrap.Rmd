@@ -30,7 +30,7 @@ future::plan(multisession)
 We will work with trawl survey data for Pacific cod in Hecate Strait:
 
 ```{r}
-d <- readRDS("data/pcod-syn-hs.rds")
+d <- readRDS(here::here("data/pcod-syn-hs.rds"))
 glimpse(d)
 ggplot(d, aes(longitude, latitude, size = density_kgpm2)) +
   geom_point() +
@@ -217,7 +217,7 @@ Try extending our above functions (e.g. `boot_biomass()`) so that it also works 
 Here is the data for Hecate Strait, Queen Charlotte Sound, and West Coast Vancouver Island:
 
 ```{r}
-d_multiple <- readRDS("data/pcod-syn-hs-qcs-wcvi.rds")
+d_multiple <- readRDS(here::here("data", "pcod-syn-hs-qcs-wcvi.rds"))
 glimpse(d_multiple)
 ggplot(d_multiple, aes(longitude, latitude, size = density_kgpm2, colour = survey)) +
   geom_point() +

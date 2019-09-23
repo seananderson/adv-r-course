@@ -19,7 +19,7 @@ First read in the following data set:
 ```{r}
 library(dplyr)
 library(purrr)
-d <- readRDS("data/wip.rds")
+d <- readRDS(here::here("data/wip.rds"))
 wip_dat <- split(d, d$country) %>% # ignore for now
   map(~ .x$percent_wip) # ignore for now
 years <- split(d, d$country) %>% # ignore for now
@@ -48,7 +48,7 @@ mean(wip_dat[[1]])
 
 `purrr::map()` let us iterate over all the elements of the last and apply our function:
 
-```{r}
+```{r results="hide"}
 map(wip_dat, mean)
 ```
 
@@ -56,14 +56,14 @@ We are now "functional programming" because one of the arguments to the function
 
 `purrr::map()` returns a list but there are other "type stable" functions within purrr to return different object types. For example:
 
-```{r}
+```{r results="hide"}
 map_dbl(wip_dat, mean)
 map_chr(wip_dat, mean)
 ```
 
 We can pass other arguments to our main function through the `...`:
 
-```{r}
+```{r results="hide"}
 map(wip_dat, quantile)
 map(wip_dat, quantile, prob = 0.8)
 ```
@@ -115,7 +115,7 @@ mean_wip(wip_dat$`United States`)
 
 5. Iterate with your new function:
 
-```{r}
+```{r results="hide"}
 map_dbl(wip_dat, mean_wip)
 ```
 
@@ -125,7 +125,7 @@ map_dbl(wip_dat, mean_wip)
 - Write a function that calculates the range (maximum minus minimum value) of percentage of women in parliament for a single country. Apply it to Canada and Finland.
 - Apply your range function to all countries and return the result as a numeric vector. As a final step, sort the output from lowest to highest value.
 
-```{r}
+```{r results="hide"}
 map_dbl(wip_dat, var) # exercise
 
 range_wip <- function(x) { # exercise
@@ -174,7 +174,7 @@ For short functions, sometimes it's not worth naming your function. Instead we c
 
 As an example, we could rewrite our calculations above that take the mean women in parliament percentage for each country after dropping the lowest year using an anonymous function:
 
-```{r}
+```{r results="hide"}
 map_dbl(wip_dat, function(x) (sum(x) - min(x)) / (length(x) - 1))
 ```
 
@@ -182,7 +182,7 @@ map_dbl(wip_dat, function(x) (sum(x) - min(x)) / (length(x) - 1))
 
 purrr has a shortcut for anonymous functions because they are a very common and useful way of working:
 
-```{r}
+```{r results="hide"}
 map_dbl(wip_dat, ~ (sum(.x) - min(.x)) / (length(.x) - 1))
 ```
 
@@ -196,13 +196,13 @@ purrr contains `map2` variants of its map functions that our specialized for 2 i
 
 The `map2()` functions create named inputs of `.x` and `.y` for the first and second arguments. For example, let's fit a linear regression to the women in parliament data over time for each country (we will use an anonymous function):
 
-```{r}
+```{r results="hide"}
 map2(years, wip_dat, ~ lm(.y ~ .x))
 ```
 
 If instead we wanted to use the more generic `pmap()`, we could do it like this:
 
-```{r}
+```{r results="hide"}
 pmap(list(years, wip_dat), function(x, y) lm(y ~ x))
 ```
 
@@ -230,7 +230,7 @@ Why might you pick one over another?
 
 Try passing the results through `sort()` and optionally `rev()` to find the most positive and negative slopes.
 
-```{r}
+```{r results="hide"}
 map2_dbl(years, wip_dat, get_slope)
 map2_dbl(years, wip_dat, ~ get_slope(.x, .y)) # exercise
 map2_dbl(years, wip_dat, function(.x, .y) get_slope(.x, .y)) # exercise
@@ -280,7 +280,7 @@ Let's put this all together and try the following:
 2. Make the 2010 an argument named `cutoff` and try passing it via the `...` with your `map()` function.
 - Rerun your calculation for all years 2005 and after using your new function.
 
-```{r}
+```{r results="hide"}
 get_slope2 <- function(yrs, wip, cutoff = 2010) { # exercise
   wip <- wip[yrs >= cutoff] # exercise
   yrs <- yrs[yrs >= cutoff] # exercise

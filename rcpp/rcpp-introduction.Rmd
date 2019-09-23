@@ -80,7 +80,7 @@ We can print out values or error messages using `Rcpp::Rcout` and `Rcpp::Rcerr`.
 (Hint: in RStudio, put your cursor on the file name and press F2.)
 
 ```{r}
-sourceCpp("rcpp/print.cpp")
+sourceCpp(here::here("rcpp/print.cpp"))
 rcpp_rcout(c(1, 2))
 ```
 
@@ -102,7 +102,7 @@ return sumR(x);
 ```
 
 ```{r}
-sourceCpp("rcpp/global-R-function.cpp")
+sourceCpp(here::here("rcpp/global-R-function.cpp"))
 sumC(c(1, 2, 3))
 ```
 
