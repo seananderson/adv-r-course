@@ -3,13 +3,6 @@ title: "Debugging in R"
 output: html_document
 ---
 
-```{r}
-d <- list.files(here::here("data-raw"), full.names = TRUE,
-  pattern = "^The") %>% 
-  purrr::map_df(readr::read_csv)
-names(d) <- tolower(names(d))
-```
-
 # Exercise (browser)
 
 Figure out the bug when you run `get_climates()` below.
@@ -52,18 +45,16 @@ Once you have the above working, use `debugonce()` to step into `get_climates()`
 
 # Exercise (debug)
 
-Use `debugonce()` to step into `hist()`, step through the insanity that is the calculation of the breaks, and figure out what the value of `fuzzybreaks` is.
+Use `debugonce()` to step into `hist()`, step through the insanity that is the calculation of the breaks, and figure out what the value of `fuzzybreaks` is. Along the way try looking at some of the values in the console.
 
-Hint: it's a ways down on line 88.
+Hint: `fuzzybreaks` is a ways down on line 88.
 
 ```{r}
 set.seed(1)
 hist(rnorm(100))
 ```
 
-Use `debugonce()` to step through `ggplot2::ggplot`.
-
-Separately, use `debugonce()` to step into the last internal function used in `ggplot2::ggplot()`. Note that you will have to use `:::`.
+Use `debugonce()` to step through `ggplot2::ggplot` in the following code.
 
 ```{r, eval=FALSE}
 library(ggplot2)
@@ -71,7 +62,11 @@ ggplot(mtcars, aes(mpg, cyl)) + geom_point()
 
 debugonce(ggplot2::ggplot) # exercise
 ggplot(mtcars, aes(mpg, cyl)) + geom_point()
+```
 
+Separately, use `debugonce()` to step into the last internal function used in `ggplot2::ggplot()`. Note that you will have to use `:::`.
+
+```{r}
 debugonce(ggplot2:::set_last_plot) # exercise
 ggplot(mtcars, aes(mpg, cyl)) + geom_point()
 ```
@@ -93,8 +88,8 @@ fun <- function() {
 x <- as.list(body(fun))
 x
 as.list(x[[2]])
-as.list(x[[c(2, 4)]]) # exercise
-# keep going...
+as.list(x[[c(2, 4)]]) # same as as.list(x[[2]][[4]]) 
+# Hint: keep going...
 as.list(x[[c(2, 4, 2)]]) # exercise
 as.list(x[[c(2, 4, 2, 3)]]) # exercise
 trace(fun, browser, 
@@ -104,6 +99,8 @@ trace(fun, browser,
 
 fun()
 untrace(fun)
+
+# modified from https://whattheyforgot.org/debugging-r-code.html
 ```
 
 # Resources
