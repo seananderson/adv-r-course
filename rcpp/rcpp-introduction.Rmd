@@ -204,7 +204,7 @@ ricker_cpp(10)
 bench::mark( # exercise
   ricker_r(100), # exercise
   ricker_cpp(100), # exercise
-  check = FALSE
+  check = FALSE # exercise
 ) # exercise
 bench::mark( # exercise
   ricker_r(1e4), # exercise
@@ -234,7 +234,22 @@ out <- purrr::pmap_dfr(df, ricker_cpp) # exercise
 ggplot(out, aes(year, x)) + geom_line() + facet_grid(r ~ K) # exercise
 ```
 
-# More reading
+# Addendum
 
-- <https://adv-r.hadley.nz/rcpp.html>
-- <https://thecoatlessprofessor.com/programming/cpp/unofficial-rcpp-api-documentation/>
+These examples may seem trivial, but usually all you need is a short Rcpp function to replace the bottleneck in a long series of R code.
+
+This Ricker simulation example may seem trivial, but start simulating multiple populations simultaneously and have them disperse amongst each other as a metapopulation and very quickly the Rcpp version let's you simulate ecological systems in seconds or minutes that would take days or weeks in pure R.
+
+A metapopulation simulation with a similar Ricker model formed the basis for this R package: <https://CRAN.R-project.org/package=metafolio> that accompanied this paper <https://esajournals.onlinelibrary.wiley.com/doi/10.1890/14-0266.1>.
+
+The Advanced R book section on Rcpp:
+<https://adv-r.hadley.nz/rcpp.html>
+
+The official website:
+<http://www.rcpp.org/>
+
+The official Rcpp gallery have examples:
+<https://gallery.rcpp.org/>
+
+The unofficial Rcpp documentation:
+<https://thecoatlessprofessor.com/programming/cpp/unofficial-rcpp-api-documentation/>
