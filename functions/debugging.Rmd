@@ -3,6 +3,15 @@ title: "Debugging in R"
 output: html_document
 ---
 
+# Goals
+
+- Understand what function debugging is and why effective strategies are important.
+- Gain an overview of available debugging strategies and tools in R.
+- Become familiar with `debug()`, `debugonce()`, `browser()`, `trace()`, and R Studio's 'dot' debugging.
+- Learn to navigate the debugger via the keyboard and via R Studio's buttons.
+- Practice debugging basic functions.
+- Practice debugging a function from an installed R package.
+
 # Exercise (browser)
 
 Figure out the bug when you run `get_climates()` below.
@@ -64,7 +73,7 @@ debugonce(ggplot2::ggplot) # exercise
 ggplot(mtcars, aes(mpg, cyl)) + geom_point()
 ```
 
-Separately, use `debugonce()` to step into the last internal function used in `ggplot2::ggplot()`. Note that you will have to use `:::`.
+Use `debugonce()` to step into the last internal function used in `ggplot2::ggplot()`. Note that you will have to use `:::`.
 
 ```{r, eval=FALSE}
 debugonce(ggplot2:::set_last_plot) # exercise

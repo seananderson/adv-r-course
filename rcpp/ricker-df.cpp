@@ -13,11 +13,11 @@ Rcpp::DataFrame ricker_cpp(int n, double r = 0.8, double K = 10.0,
 
   Rcpp::DataFrame df =
     Rcpp::DataFrame::create(  // exercise
-      Rcpp::Named("year") = Rcpp::seq(1, n), // exercise
+      Rcpp::Named("year") = Rcpp::seq(1, n),
       Rcpp::Named("r") = r, // exercise
       Rcpp::Named("K") = K, // exercise
       Rcpp::Named("sigma") = sigma, // exercise
       Rcpp::Named("x") = x); // exercise
 
-  return df; // exercise
+  return df;
 }

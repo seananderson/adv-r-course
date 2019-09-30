@@ -150,9 +150,13 @@ double f1(NumericVector x) {
 
 3. What is the line `y += x[i] / n;` doing?
 
-4. What is the above function doing? What R function does this resemble?
+4. What is the above function doing? What R function does this resemble? Test that it returns the same value.
 
-5. Can you implement `cumprod()` in Rcpp? I've started below for you:
+5. Can you implement `cumprod()` (cumulative product) in Rcpp? I've started below for you:
+
+Hint: The first value in the vector has to be treated differently than the subsequent values.
+Hint: You'll have to do this in a loop.
+Hint: If you want to challenge, then don't peak! But if you're stuck, I've written a version of the function in R set up the same way you would in C++: `rcpp/cumprod.R`. Take a look at that and then try to translate it below.
 
 ```{r, eval=FALSE}
 cppFunction('
@@ -163,15 +167,10 @@ NumericVector cumprod_cpp(NumericVector x) {
   // Do the calculations here:
   // Note that there are multiple ways to do this.
   // You may not use the same number of lines.
-  
-  for (int i = 0; i < n; ++i) { // exercise
-    if (i == 0) { // exercise
-      y[i] = x[i]; // exercise
-    } else { // exercise
-      y[i] = y[i-1] * x[i]; // exercise
-    } // exercise
+  y[0] = x[0]; // exercise
+  for (int i = 1; i < n; ++i) { // exercise
+    y[i] = y[i-1] * x[i]; // exercise
   } // exercise
-  
   return y;
 }
 ')
@@ -179,27 +178,33 @@ cumprod_cpp(c(1, 2, 3, 4))
 cumprod(c(1, 2, 3, 4))
 ```
 
-# Exercise 2
+# Exercise 2 (more advanced C++, sourceCpp, and benchmarking)
 
-I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translate it into C++ for use with Rcpp. Name your new function `ricker_rcpp()`. I've started for you in `rcpp/ricker.cpp`.
+I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translate it into C++ for use with Rcpp. I've started for you in one of `rcpp/ricker-medium.cpp`, `rcpp/ricker-hard.cpp`, or `rcpp/ricker-superhard.cpp`.
 
-Verify that you get the same answer out of both functions if you start with the same random number generator seed (e.g., `set.seed(42)`).
+Choose your own adventure depending on how confident you are with this. There is no "easy", because let's not kid ourselves, C++ is never easy! And if it is for you, why are you here!? :)
+
+Verify that you get the same answer out of both functions if you start with the same random number generator seed.
 
 Benchmark your Rcpp version against R version using `bench::mark()`. Start with a time series of length 100. Then try it with a time series of length 1e4. How do they compare and why?
 
 ```{r}
 source(here::here("rcpp/ricker.R"))
-sourceCpp(here::here("rcpp/ricker.cpp"))
 
-set.seed(42) # exercise
-ricker_r(10) # exercise
-set.seed(42) # exercise
-ricker_cpp(10) # exercise
+# pick the one you filled in:
+sourceCpp(here::here("rcpp/ricker-medium.cpp"))
+# sourceCpp(here::here("rcpp/ricker-hard.cpp"))
+# sourceCpp(here::here("rcpp/ricker-superhard.cpp"))
+
+set.seed(42)
+ricker_r(10)
+set.seed(42)
+ricker_cpp(10)
 
 bench::mark( # exercise
   ricker_r(100), # exercise
   ricker_cpp(100), # exercise
-  check = FALSE # exercise
+  check = FALSE
 ) # exercise
 bench::mark( # exercise
   ricker_r(1e4), # exercise
@@ -208,9 +213,9 @@ bench::mark( # exercise
 ) # exercise
 ```
 
-# Exercise 3
+# Exercise 3 (returning other data classes)
 
-Take your file `rcpp/ricker.cpp` and copy its contents into `rcpp/ricker-df.cpp`. Edit the end of your function so that it returns a data frame instead of a numeric vector. Make your data frame include the columns year (`Rcpp::seq(1, n)`), `x` (for the simulated population density), and a column for each parameter.
+Take your file `rcpp/ricker-*.cpp` and copy its contents into `rcpp/ricker-df.cpp`. Edit the end of your function so that it returns a data frame instead of a numeric vector. Make your data frame include the columns year, `x` (for the simulated population density), and a column for each parameter `r`, `K`, and `sigma`.
 
 ```{r}
 sourceCpp(here::here("rcpp/ricker-df.cpp"))

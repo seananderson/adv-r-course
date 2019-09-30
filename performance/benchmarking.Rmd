@@ -1,0 +1,151 @@
+---
+title: "Benchmarking"
+output: html_document
+---
+
+# Goals
+
+- Understand what benchmarking is and why it's important.
+- Gain familiarity with using the bench package.
+- Practice benchmarking some R functions.
+
+# The bench package
+
+There are multiple benchmarking packages in R. We're going to work with the bench package, which has the cutely named main function `mark()` so you can call it as `bench::mark()`.
+
+The basic format is like this:
+
+```{r}
+dat <- data.frame(x = runif(100, 1, 1000), y = runif(10, 1, 1000))
+b <- bench::mark(
+  dat[dat$x > 500, ],
+  dplyr::filter(dat, x > 500),
+  subset(dat, x > 500),
+  check = FALSE
+)
+b
+plot(b)
+```
+
+Read the help file for `?bench::mark()` to look at the various options.
+
+Answer the following:
+
+1. What does the `check` argument do? When might you want to set it to `FALSE` vs. `TRUE`?
+2. What does `relative` do?
+2. How do `min_time`, `iterations`, `min_iterations`, and `max_iterations` interact?
+
+# Exercises
+
+We'll use benchmarking to test a number of suggestions for speeding up R code.
+
+## Look for existing solutions
+
+Benchmark `lm()` vs. `lm.fit()` for fitting a model of `y` vs. `x`. While you're at it, skim the help file for `lm.fit()`. You should usually be using `lm()` even if it's slower!
+
+```{r}
+x <- rnorm(1e6)
+y <- 0.5 + 0.2 * x + rnorm(length(x), sd = 0.1)
+model_matrix <- matrix(cbind(rep(1, length(x)), x), ncol = 2)
+head(model_matrix)
+
+b <- bench::mark(
+  m <- lm(y ~ x), # exercise
+  m2 <- lm.fit(model_matrix, y), # exercise
+  check = FALSE
+)
+b
+plot(b)
+```
+
+## Do as little as possible
+
+Benchmark `rowMeans()` vs. `.rowMeans()`:
+
+```{r}
+set.seed(123)
+df <- cbind(x1 = rnorm(1e3), x2 = rnorm(1e3))
+head(df)
+
+b <- bench::mark(
+  rowMeans(df), # exercise
+  .rowMeans(df, m = 1e3, n = 2) # exercise
+)
+b
+plot(b)
+```
+
+## Vectorize
+
+Benchmark `remove_NAs1()` vs. `remove_NAs2()`:
+
+```{r}
+x <- rnorm(1e4)
+x[c(2, 200, 400)] <- NA
+
+remove_NAs1 <- function(x) {
+  for (i in seq_along(x)) {
+    if (is.na(x[i])) x[i] <- 0
+  }
+  x
+}
+
+remove_NAs2 <- function(x) {
+  x[is.na(x)] <- 0
+  x
+}
+
+
+b <- bench::mark(
+  remove_NAs1(x), # exercise
+  remove_NAs2(x) # exercise
+)
+b
+plot(b)
+```
+
+## Avoid copies
+
+Benchmark `my_cumsum1()` vs. `my_cumsum2()`. While you're at it, also compare these to `base::cumsum()`. Which of the above rules does `cumsum()` fall into? Why is it faster?
+
+```{r}
+x <- rnorm(1e4)
+
+my_cumsum1 <- function(x) {
+  sum <- x[1]
+  for (i in seq(2, length(x))) {
+    sum[i] <- sum[i - 1] + x[i]
+  }
+  sum
+}
+
+my_cumsum2 <- function(x) {
+  sum <- numeric(length(x))
+  sum[1] <- x[1]
+  for (i in seq(2, length(x))) {
+    sum[i] <- sum[i - 1] + x[i]
+  }
+  sum
+}
+
+b <- bench::mark(
+  my_cumsum1(x), # exercise
+  my_cumsum2(x), # exercise
+  cumsum(x) # exercise
+)
+b
+plot(b)
+```
+
+## Parallelize
+
+Stay tuned...
+
+## Re-write in C++
+
+Stay tuned...
+
+# More information
+
+- <https://adv-r.hadley.nz/perf-improve.html>
+- <http://www.burns-stat.com/pages/Tutor/R_inferno.pdf>

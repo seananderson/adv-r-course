@@ -1,21 +1,50 @@
 ---
 title: "Profiling R code"
+output: html_document
 ---
 
 # Goals
 
-- Understand what code profiling is and why it's important
-- Gain familiarity with the profvis package for profiling
+- Understand what code profiling is and why it's important.
+- Gain familiarity with using the profvis package.
+- Practice profiling some R functions.
 
-# 
+# Never forget...
 
 > Programmers waste enormous amounts of time thinking about, or worrying about, the speed of noncritical parts of their programs, and these attempts at efficiency actually have a strong negative impact when debugging and maintenance are considered.
 
 > — Donald Knuth.
 
-```{r}
-library(profvis)
+# The profvis package
 
-source("profiling-example.R")
+There are a number of profiling options in R. Here we will work with the profvis package. The initial examples below come from the package itself.
+
+Let's start with a simple example from Hadley's Advanced R book:
+
+```{r, eval=FALSE}
+source(here::here("performance", "profiling-example.R"))
 profvis::profvis(f())
 ```
+
+Inspect the output and see if you can figure out what everything is telling you.
+
+- Try double-clicking on elements of the "flame graph". Note this only works if the code is in a separate .R file (not in an .Rmd).
+- Why is so much time spent on line 11?
+
+Try the following example from the package documentation:
+
+```{r, eval=FALSE}
+library(profvis)
+profvis({
+  data(diamonds, package = "ggplot2")
+  plot(price ~ carat, data = diamonds)
+  m <- lm(price ~ carat, data = diamonds)
+  abline(m, col = "red")
+})
+```
+
+- Where is the majority of the time spent?
+
+# Exercise
+
+In pairs, take a short chunk of code you have written that takes more than a second or two to run and try profiling it. What can you identify as the bottlenecks? Can you think of obvious solutions to those bottlenecks or are they inevitable?

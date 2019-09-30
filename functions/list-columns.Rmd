@@ -122,7 +122,7 @@ by_country <- by_country %>%
 by_country
 ```
 
-If we want to get at the contents of that output then we will need to "unnest" the data frame intolerant which column to unnest:
+If we want to get at the contents of that output then we will need to "unnest" the data frame (and explicitly tell it which column to a nest):
 
 ```{r}
 resids <- tidyr::unnest(by_country, resids)
@@ -146,12 +146,13 @@ by_country %>%
   tidyr::unnest(glance)
 ```
 
-That leaves all our original list columns. If we want to drop those, we can set the argument `.drop = TRUE`:
+That leaves all our original list columns. If we want to drop those, we can `dplyr::select()` them off:
 
 ```{r}
 glance <- by_country %>%
   mutate(glance = purrr::map(model, broom::glance)) %>%
-  tidyr::unnest(glance, .drop = TRUE)
+  tidyr::unnest(glance) %>% 
+  dplyr::select(-data, -model)
 glance
 
 glance %>%
@@ -171,23 +172,27 @@ wp %>%
 
 # summarize() and list-columns
 
-Another use for list-columns is to capture the output from functions that don't return a single value. For example, the `quantile()` function. We can solve this by wrapping the output in `list()` on a group data frame. This will automatically turn into a list-column that we can then unnest.
+Another use for list-columns is to capture the output from functions that don't return a single value. For example, the `quantile()` function. We can solve this by wrapping the output in `list()` on a group data frame. This will automatically turn the output into a list-column that we can then unnest.
 
 ```{r}
 probs <- c(0.01, 0.25, 0.5, 0.75, 0.99)
 wp %>%
   group_by(year) %>%
   summarise(p = list(probs), q = list(quantile(percent_wip, probs))) %>%
-  tidyr::unnest()
+  tidyr::unnest(cols = c(p, q))
 ```
 
-Exercise: can you think of other summary functions that return multiple values where this could be useful?
+Exercise: can you think of other functions that return multiple values where this could be useful?
 
-# Exercise 1
+# Exercise
 
 Start with the following nested list-column data frame that we made above:
 
 ```{r}
+country_model <- function(df) {
+  lm(percent_wip ~ year, data = df)
+}
+
 by_country <- wp %>%
   group_by(country) %>%
   tidyr::nest() %>%
@@ -196,80 +201,57 @@ by_country <- wp %>%
 by_country
 ```
 
-Use `mutate()` and `purrr::map()` to grab the slope for each model and save it in a new column. 
+Use `mutate()` and `purrr::map()` to grab the slope for each model and save it in a new column. You can write a little function or use an anonymous function.
 
 Bonus: If that was easy then try also grabbing the intercept at the same time.
+Read the help file to understand the syntax for unnesting multiple list columns.
 
 ```{r}
-slopes <- by_country %>% # exercise
+slopes <- by_country %>%
   mutate(
     slope = purrr::map(model, ~ coef(.x)[[2]]), # exercise
-    intercept = purrr::map(model, ~ coef(.x)[[1]])
+    intercept = purrr::map(model, ~ coef(.x)[[1]]) # exercise
   ) %>% # exercise
-  tidyr::unnest(intercept, slope, .drop = TRUE) # exercise
+  tidyr::unnest(c(intercept, slope)) # exercise
 ```
 
-Try plotting the countries with the top thirty biggest slopes.
-
-Bonus: If that was easy then try ordering the slopes in your plot using `forcats::fct_reorder()` or some other approach.
+Try plotting the countries with the top thirty biggest slopes:
 
 ```{r}
-slopes %>% # exercise
-  top_n(30, slope) %>% # exercise
-  ggplot(aes(slope, forcats::fct_reorder(country, slope))) + # exercise
-  geom_point() # exercise
+slopes %>%
+  ungroup() %>% # for top_n to work
+  top_n(30, slope) %>%
+  ggplot(aes(slope, forcats::fct_reorder(country, slope))) +
+  geom_point()
 ```
 
 What about the most negative or lowest slopes?
 
 ```{r}
-slopes %>% # exercise
-  top_n(30, -slope) %>% # exercise
-  ggplot(aes(slope, forcats::fct_reorder(country, slope))) + # exercise
-  geom_point() # exercise
+slopes %>%
+  ungroup() %>% # for top_n to work
+  top_n(30, -slope) %>%
+  ggplot(aes(slope, forcats::fct_reorder(country, slope))) +
+  geom_point()
 ```
 
-Bonus question: you likely just copied and pasted the code to modify it to plot the lowest slopes. If we want to do that yet again then that sounds like a good case for using a function.
+We just copied and pasted the code to modify it to plot the lowest slopes. If we want to do that yet again then that sounds like a good case for using a function.
 
-Can you write a small function that takes your data frame, takes an argument for the number of rows to plot, takes an argument to plot the top or bottom slopes, and makes the plot? There are many ways you could do this. Test your function with different inputs.
+Let's write a small function that takes a data frame, takes an argument for the number of rows to plot, takes an argument to plot the top or bottom slopes, and makes the plot.
 
 ```{r}
-plot_slopes <- function(df, n = 10, type = c("top", "bottom")) { # exercise
-  type <- match.arg(type) # exercise
-  df %>% # exercise
-    top_n(n, if (type == "top") slope else -slope) %>% # exercise
-    ggplot(aes(slope, forcats::fct_reorder(country, slope))) + # exercise
-    geom_point() # exercise
+plot_slopes <- function(df, n = 10, type = c("top", "bottom")) {
+  type <- match.arg(type)
+  df %>%
+    ungroup() %>% # for top_n to work
+    top_n(n, if (type == "top") slope else -slope) %>%
+    ggplot(aes(slope, forcats::fct_reorder(country, slope))) +
+    geom_point()
 }
 
-plot_slopes(slopes, 15) # exercise
-plot_slopes(slopes, 15, type = "bottom") # exercise
+plot_slopes(slopes, 15)
+plot_slopes(slopes, 15, type = "bottom")
 ```
-
-# Exercise 2
-
-Can you use the same nest/list-column approach to expand the years column to include an `NA` for `percent_wip` for all missing years between the first and last year recorded for each country?
-
-Hint: `dplyr::group_by()` and `tidyr::nest()` by country.
-Hint: `purrr::map()` your data column to the `expand_years()` function (below) using `mutate()`. Call the new list column `years_filled`.
-Hint: Then `tidyr::unnest()` on your `years_filled` column.
-
-```{r}
-expand_years <- function(x) {
-  y <- data.frame(year = seq(min(x$year), max(x$year)))
-  dplyr::left_join(y, x, by = "year")
-}
-
-expanded_wp <- wp %>%
-  group_by(country) %>% # exercise
-  tidyr::nest() %>% # exercise
-  mutate(years_filled = purrr::map(data, expand_years)) %>% # exercise
-  tidyr::unnest(years_filled) # exercise
-
-expanded_wp
-```
-
-<!-- # https://r4ds.had.co.nz/many-models.html -->
 
 # Take home messages
 
@@ -278,3 +260,62 @@ expanded_wp
 - They are powerful because they let you continue to use dplyr verbs while operating on objects that are not a simple column of values, such as model output or anything you can jam into a list.
 - You could do everything you can do with list columns in some other way, but they are often the shortest most elegant route to get there.
 - List column data frames may truly baffle your old-school non-Tidyverse loving friends. ;)
+
+# Other split-apply-combine approaches:
+
+The plyr package popularized the "split-apply-combine" approach, but is no longer actively developed and it's time to move on. Unfortunately, there isn't a single clear best way to work at the moment in the last couple of years has seen a rapid evolution of suggested approaches within the tidyverse.
+
+Here are an assortment of ways I'm aware of that you can split-apply-combine a data frame these days. Besides those that are depreciated, the others have various advantages and disadvantages.
+
+Note that some of these return the grouping column in the output. Conversely, some of them make the grouping variable available within the `get_slope()` function others do not. Some require an explicit `dplyr::ungroup()` and others do not.
+
+- I've arranged them approximately in order of their evolution:
+- We're ignoring functions like `aggregate()` and `tapply()`, which can also accomplish the same thing.
+- Of course, all of these can be done with or without pipes.
+
+```{r}
+get_slope <- function(df) {
+  m <- lm(percent_wip ~ year, data = df)
+  data.frame(slope = coef(m)[[2]])
+}
+
+# base::split + base::lapply + base::do.call:
+wp %>% split(.$country) %>% 
+  lapply(get_slope) %>% 
+  do.call(rbind, .)
+
+# plyr, deprecated:
+plyr::ddply(wp, c("country"), get_slope)
+
+# dplyr::do, deprecated:
+wp %>% dplyr::group_by(country) %>%
+  dplyr::do(get_slope(.)) %>% 
+  dplyr::ungroup()
+
+# dplyr::group_by + tidyr::nest + dplyr::mutate (list columns)
+wp %>% dplyr::group_by(country) %>%
+  tidyr::nest() %>% 
+  dplyr::mutate(data = purrr::map(data, get_slope)) %>% 
+  tidyr::unnest(cols = data) %>% 
+  dplyr::ungroup()
+
+# base::split + purrr::map + dplyr::bind_rows
+wp %>% split(.$country) %>% 
+  purrr::map(get_slope) %>% 
+  dplyr::bind_rows()
+
+# base::split + purrr::map_dfr:
+wp %>% split(.$country) %>%
+  purrr::map_dfr(get_slope)
+
+# dplyr::group_by + dplyr::group_split + purrr::map_dfr:
+wp %>% dplyr::group_by(country) %>% 
+  dplyr::group_split() %>%
+  purrr::map_dfr(get_slope) %>%
+  dplyr::ungroup()
+
+# dplyr::group_split + purrr::map_dfr: (same as above but skips dplyr::group_by)
+wp %>% dplyr::group_split(country) %>%
+  purrr::map_dfr(get_slope) %>%
+  dplyr::ungroup()
+```

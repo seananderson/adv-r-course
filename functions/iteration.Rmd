@@ -46,13 +46,13 @@ If we wanted to calculate the mean for certain country, we could do it like this
 mean(wip_dat[[1]])
 ```
 
-`purrr::map()` let us iterate over all the elements of the last and apply our function:
+`purrr::map()` lets us iterate over all the elements of the list and apply our function:
 
 ```{r results="hide"}
 map(wip_dat, mean)
 ```
 
-We are now "functional programming" because one of the arguments to the function `map()` is another function!
+We are now "functional programming" because one of the arguments to the function `map()` is another function! This is really powerful.
 
 `purrr::map()` returns a list but there are other "type stable" functions within purrr to return different object types. For example:
 
@@ -61,7 +61,7 @@ map_dbl(wip_dat, mean)
 map_chr(wip_dat, mean)
 ```
 
-We can pass other arguments to our main function through the `...`:
+We can pass other arguments to our main function through the `purrr::map()` `...` argument:
 
 ```{r results="hide"}
 map(wip_dat, quantile)
@@ -121,24 +121,32 @@ map_dbl(wip_dat, mean_wip)
 
 # Exercise
 
-- Calculate the variance of the percentage of women in parliament for each country. Return the result as a numeric vector.
-- Write a function that calculates the range (maximum minus minimum value) of percentage of women in parliament for a single country. Apply it to Canada and Finland.
-- Apply your range function to all countries and return the result as a numeric vector. As a final step, sort the output from lowest to highest value.
+1. Calculate the variance of the percentage of women in parliament for each country. Return the result as a numeric vector.
 
 ```{r results="hide"}
 map_dbl(wip_dat, var) # exercise
+```
 
+2. Write a function that calculates the range (maximum minus minimum value) of percentage of women in parliament for a single country. Apply it to Canada and Finland.
+
+```{r results="hide"}
 range_wip <- function(x) { # exercise
   max(x) - min(x) # exercise
 } # exercise
 range_wip(wip_dat$Canada) # exercise
 range_wip(wip_dat$Finland) # exercise
+```
 
+3. Apply your range function to all countries and return the result as a numeric vector. As a final step, sort the output from lowest to highest value.
+
+```{r results="hide"}
 map_dbl(wip_dat, range_wip) # exercise
 map_dbl(wip_dat, range_wip) %>% sort() # exercise
 ```
 
 # Exercise (reading multiple data files with purrr)
+
+A common problem is reading multiple similarly formatted .csv or .rds files. Functional programming is a great approach to this.
 
 Here's a character vector with 3 .csv files to be read in.
 
@@ -161,7 +169,7 @@ list.files(here::here("data-raw"), full.names = TRUE,
   pattern = "^The")
 ```
 
-Use `map_df()` to read all three files in and bind them into a data frame in one line of code. Try with `readr::read_csv` and try with `read.csv` while passing the option `stringsAsFactors = FALSE`.
+Use `map_df()` to read all three files in and bind them into a data frame in one line of code. Try with `readr::read_csv()` and try with `read.csv()` while passing the option `stringsAsFactors = FALSE`.
 
 ```{r}
 map_df(f, readr::read_csv) # exercise
@@ -222,8 +230,8 @@ get_slope <- function(x, y) {
 
 Use `map2_dbl()` to return the slope for each country. Try it 3 ways:
 
-1. The way written below
-2. Via the `~` shortcut to an anonymous function.
+1. The way written I started with below.
+2. Via the `~` purrr shortcut to an anonymous function.
 3. Via the standard R anonymous function syntax.
 
 Why might you pick one over another?
@@ -253,14 +261,14 @@ df <- data.frame(
 )
 ```
 
-Why doesn't the following work?
+Why doesn't the following work? Discuss with your neighbour.
 
 ```{r, error=TRUE}
 plus <- function(x, y) x + y
 pmap_dbl(df, plus)
 ```
 
-How can we fix it? There are at least 2 ways. Think about it for a minute.
+How can we fix it (by only modifying our function)? There are at least 2 ways. Think about it for a minute and try your solutions below:
 
 Hint: one of the solutions involves `...`.
 
@@ -277,7 +285,7 @@ pmap_dbl(df, plus3)
 Let's put this all together and try the following:
 
 1. Make a function to calculate the slope of the percentage of women in parliament for each country but only for the years 2010 and after.
-2. Make the 2010 an argument named `cutoff` and try passing it via the `...` with your `map()` function.
+2. Make the 2010 an argument named `cutoff` and try passing it via the `...` in your `map()` function.
 - Rerun your calculation for all years 2005 and after using your new function.
 
 ```{r results="hide"}

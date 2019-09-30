@@ -143,7 +143,7 @@ Now, we can do the same in parallel by using the `future::future()` and `future:
 ```{r}
 boot_biomass_purrr_future <- function(dat, reps = 500) {
   dat %>% dplyr::group_split(year) %>% 
-    purrr::map(~future(bootstrap_one_year(.x, reps = reps))) %>%
+    purrr::map(~ future(bootstrap_one_year(.x, reps = reps))) %>%
     purrr::map_dfr(~ value(.x))
 }
 ```
@@ -195,14 +195,14 @@ boot_biomass_future.apply(d, reps = 500)
 toc()
 ```
 
-A more rigourous test would be with benchmarking. You've worked with this in an earlier lesson, so try filling within yourself. I recommend using a smaller number of bootstrap repetitions, say 24.
+A more rigourous test would be with benchmarking:
 
 ```{r}
 b <- bench::mark(
-  sequential = boot_biomass(d, reps = 24), # exercise
-  future.apply = boot_biomass_future.apply(d, reps = 24), # exercise
-  purrr_futur = boot_biomass_purrr_future(d, reps = 24), # exercise
-  furrr = boot_biomass_furrr(d, reps = 24), # exercise
+  sequential = boot_biomass(d, reps = 24),
+  future.apply = boot_biomass_future.apply(d, reps = 24),
+  purrr_futur = boot_biomass_purrr_future(d, reps = 24),
+  furrr = boot_biomass_furrr(d, reps = 24),
   iterations = 10, check = FALSE)
 print(b)
 plot(b)
@@ -211,8 +211,6 @@ plot(b)
 Why did we set the `iterations` and `check` argument explicitly? What would be an alternative to setting `check = FALSE`?
 
 # Exercise
-
-Try extending our above functions (e.g. `boot_biomass()`) so that it also works with multiple surveys. Then pick one of the above approaches to iterate over years and surveys in parallel.
 
 Here is the data for Hecate Strait, Queen Charlotte Sound, and West Coast Vancouver Island:
 
@@ -225,7 +223,9 @@ ggplot(d_multiple, aes(longitude, latitude, size = density_kgpm2, colour = surve
   facet_wrap(~year)
 ```
 
-Write versions of the above functions to iterate over years and surveys in parallel. Save your output to an object named `b`. Check to make sure your parallel version is faster.
+Try extending our above function (`boot_biomass()`) so that it also works with multiple surveys (start by copying and pasting the original function below). Then pick one of the above approaches and use it to iterate over years and surveys in parallel in a separate function.
+
+Check to make sure your parallel version is faster.
 
 ```{r}
 boot_biomass2 <- function(dat, reps = 200) { # exercise
@@ -240,12 +240,12 @@ boot_biomass_future.apply2 <- function(dat, reps = 200) { # exercise
 }
 
 tic() # exercise
-b <- boot_biomass2(d_multiple, reps = 200) # exercise
+b <- boot_biomass2(d_multiple) # exercise
 toc() # exercise
 b # exercise
 
 tic() # exercise
-b <- boot_biomass_future.apply2(d_multiple, reps = 200) # exercise
+b <- boot_biomass_future.apply2(d_multiple) # exercise
 toc() # exercise
 b # exercise
 ```
@@ -258,4 +258,3 @@ ggplot(b, aes(year, est, ymin = lwr, ymax = upr)) +
   geom_line() +
   facet_wrap(~survey)
 ```
-
