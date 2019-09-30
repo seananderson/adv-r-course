@@ -5,6 +5,10 @@ files <- files[!grepl("^data-raw", files)]
 files <- files[!grepl("^exercises\\/", files)]
 
 folders <- c("data", "functions", "parallel", "performance", "rcpp")
+
+if (file.exists("exercises"))
+  stop("Stopping unless you manually delete the 'exercises' folder.")
+
 dir.create("exercises", showWarnings = FALSE)
 purrr::walk(folders, function(x)
   dir.create(file.path("exercises", x), showWarnings = FALSE))
