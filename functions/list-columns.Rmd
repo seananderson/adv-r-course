@@ -263,15 +263,19 @@ plot_slopes(slopes, 15, type = "bottom")
 
 # Other split-apply-combine approaches:
 
-The plyr package popularized the "split-apply-combine" approach, but is no longer actively developed and it's time to move on. Unfortunately, there isn't a single clear best way to work at the moment in the last couple of years has seen a rapid evolution of suggested approaches within the tidyverse.
+It's a common problem to split up a data frame by some column, apply some function to each "chunk", and combine those chunks back into a data frame.
+
+The plyr package popularized the "split-apply-combine" approach, but the package is no longer actively developed and it's time to move on. Unfortunately, there isn't a single clear best way to work at the moment and the last couple of years has seen a rapid evolution of suggested approaches within the tidyverse.
 
 Here are an assortment of ways I'm aware of that you can split-apply-combine a data frame these days. Besides those that are depreciated, the others have various advantages and disadvantages.
 
-Note that some of these return the grouping column in the output. Conversely, some of them make the grouping variable available within the `get_slope()` function others do not. Some require an explicit `dplyr::ungroup()` and others do not.
+Note that some of these return the grouping column in the output. Conversely, some of them make the grouping variable available within the `get_slope()` function and others do not. Some require an explicit `dplyr::ungroup()` and others do not.
 
 - I've arranged them approximately in order of their evolution:
 - We're ignoring functions like `aggregate()` and `tapply()`, which can also accomplish the same thing.
 - Of course, all of these can be done with or without pipes.
+
+Which do you like and why?
 
 ```{r}
 get_slope <- function(df) {

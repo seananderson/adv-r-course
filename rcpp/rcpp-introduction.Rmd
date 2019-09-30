@@ -3,7 +3,7 @@ title: "Rcpp introduction"
 output: html_document
 ---
 
-Rcpp let's is easily integrate C++ code with R. C++ is far more complicated to code in than R but it is blazing fast. In some situations it's well worth the extra trouble. The most common scenarios where it's worth the trouble is when code can't be vectorized because it builds on itself (e.g. simulations) or when some piece of code needs to be called millions of times.
+Rcpp let's us easily integrate C++ code with R. C++ is far more complicated to code in than R but it is blazing fast. In some situations it's well worth the extra trouble. The most common scenarios where it's worth the trouble is when code can't be vectorized because it builds on itself (e.g. simulations) or when some piece of code needs to be called millions of times.
 
 The most basic way we can evaluate C++ code is via `Rcpp::evalCpp()`. This generally isn't too useful except for testing:
 
@@ -16,7 +16,7 @@ evalCpp("Rcpp::rnorm(1, 0, 1)")
 
 Those will take a couple seconds to run the first time because C++ code needs to be compiled to be run.
 
-Try running the above code again. Was it still slow? Why?
+Try running the above code again. Was it faster?
 
 Note in the second case we are using one of the functions built into the Rcpp C++ library that mimics the R function.
 
@@ -102,8 +102,8 @@ return sumR(x);
 ```
 
 ```{r}
-sourceCpp(here::here("rcpp/global-R-function.cpp"))
-sumC(c(1, 2, 3))
+sourceCpp(here::here("rcpp/sumCwithR.cpp"))
+sumCwithR(c(1, 2, 3))
 ```
 
 As proof, let's modify our `sumR()` function to do something ridiculous and run our C++ function again:
@@ -112,12 +112,12 @@ As proof, let's modify our `sumR()` function to do something ridiculous and run 
 sumR <- function(x) {
   sum(x) + 9999
 }
-sumC(c(1, 2, 3))
+sumCwithR(c(1, 2, 3))
 ```
 
-Of course, our C++ function won't be any faster than the R one, but sometimes this can get you out of having to code something that is tricky but fast in R.
+Of course, our C++ function won't be any faster than the R one, but sometimes this can get you out of having to code something that is tricky in C++ but fast enough in R.
 
-# Exercises 1
+# Exercises 1 (practicing reading Rcpp code)
 
 1. What is wrong with the following C++ function? Can you fix it?
 
@@ -152,6 +152,8 @@ double f1(NumericVector x) {
 
 4. What is the above function doing? What R function does this resemble? Test that it returns the same value.
 
+# Exercise 2 (basic Rcpp C++ coding)
+
 5. Can you implement `cumprod()` (cumulative product) in Rcpp? I've started below for you:
 
 Hint: The first value in the vector has to be treated differently than the subsequent values.
@@ -178,9 +180,9 @@ cumprod_cpp(c(1, 2, 3, 4))
 cumprod(c(1, 2, 3, 4))
 ```
 
-# Exercise 2 (more advanced C++, sourceCpp, and benchmarking)
+# Exercise 3 (more advanced C++, sourceCpp, and benchmarking)
 
-I've written a Ricker/logistic population dynamic simulation in `rcpp/ricker.R`. Take that code and translate it into C++ for use with Rcpp. I've started for you in one of `rcpp/ricker-medium.cpp`, `rcpp/ricker-hard.cpp`, or `rcpp/ricker-superhard.cpp`.
+I've written a Ricker/logistic population dynamic simulation in `ricker.R`. Take that code and translate it into C++ for use with Rcpp. I've started for you in one of `ricker-medium.cpp`, `ricker-hard.cpp`, or `ricker-superhard.cpp`.
 
 Choose your own adventure depending on how confident you are with this. There is no "easy", because let's not kid ourselves, C++ is never easy! And if it is for you, why are you here!? :)
 
@@ -213,7 +215,7 @@ bench::mark( # exercise
 ) # exercise
 ```
 
-# Exercise 3 (returning other data classes)
+# Exercise 4 (returning other data classes)
 
 Take your file `rcpp/ricker-*.cpp` and copy its contents into `rcpp/ricker-df.cpp`. Edit the end of your function so that it returns a data frame instead of a numeric vector. Make your data frame include the columns year, `x` (for the simulated population density), and a column for each parameter `r`, `K`, and `sigma`.
 
@@ -253,3 +255,6 @@ The official Rcpp gallery have examples:
 
 The unofficial Rcpp documentation:
 <https://thecoatlessprofessor.com/programming/cpp/unofficial-rcpp-api-documentation/>
+
+An an official book:
+<https://teuder.github.io/rcpp4everyone_en/>
