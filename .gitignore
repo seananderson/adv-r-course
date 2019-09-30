@@ -7,3 +7,5 @@
 data-raw/*.rds
 *.key
 *.html
+exercises/*
+*.png
