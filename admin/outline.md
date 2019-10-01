@@ -48,7 +48,8 @@ install.packages(c(
   "Rcpp",
   "usethis",
   "glue",
-  "broom"
+  "broom",
+  "furrr"
 ))
 ```
 

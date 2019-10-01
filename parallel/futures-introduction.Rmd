@@ -5,18 +5,13 @@ output: html_document
 
 # Goals
 
-<!-- - Understand when parallel processing can be useful. -->
-<!-- - Understand the difference between multi-session and multi-core strategies. -->
-<!-- - Gain a broad overview of the available parallel processing options in R. -->
-<!-- - Understand a basic example with the foreach package. -->
-<!-- - Understand the available `future::plan()`s: `sequential`,  -->
-<!--   `transparent`, `multiprocess`, `multisession`, `multicore`.  -->
-  <!-- Know that `cluster` and `remote` exist. -->
-
-- Become familiar with the future and future.apply packages.
-- Understand basic future examples with implicit and explicit APIs
-- Gain a basic overview have some more advanced functionality such as explicitly passing global variables.
-- Learn to iterate over the application of a basic function in parallel with the 'future.apply' package.
+- Understand when parallel processing can be useful.
+- Understand the difference between multi-session and multi-core strategies.
+- Gain a broad overview of the available parallel processing options in R.
+- Understand a basic example with the foreach package.
+- Understand the available `future::plan()`s: `sequential`,
+  `transparent`, `multiprocess`, `multisession`, `multicore`.
+Know that `cluster` and `remote` exist.
 
 # Future package introduction
 
