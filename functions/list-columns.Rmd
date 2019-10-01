@@ -41,7 +41,7 @@ wp %>%
 
 # Introducing list-column data frames
 
-List-columns are an interesting, relatively new, and useful data format in R. Technically you can work with them in base R but they are a bit clunky and don't print well. The tibble package solves this and makes working with list columns elegant. There also wasn't a huge advantage to working with list columns until dplyr came along.
+List-columns are an interesting, relatively new, and sometimes useful data format in R. Technically you can work with them in base R but they are a bit clunky and don't print well. The tibble package solves this and makes working with list columns more elegant. There also wasn't a huge advantage to working with list columns until dplyr came along.
 
 We can make a basic list-column data frame like this:
 
