@@ -19,10 +19,10 @@ Figure out the bug when you run `get_climates()` below.
 Hint: Use `traceback()` to find where it occurs, add `browser()` calls
 Hint: Look at the types of the data and think about what the function expects.
 
-```{r}
+```{r, error=TRUE}
 # Separate, flatten, and trim values in the vector
 clean <- function(vec) {
-  values <- strsplit(as.character(vec), ",")
+  values <- strsplit(vec, ",")
   flat_values <- unlist(values)
   trimmed_values <- stringr::str_trim(flat_values)
   trimmed_values
