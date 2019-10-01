@@ -1,6 +1,6 @@
 files <- list.files(here::here(), pattern = "*.Rmd$|*.R$|*.cpp$",
   recursive = TRUE)
-ignore <- c("install\\.R$", "^data-raw", "^exercises\\/", "^make\\.R$")
+ignore <- c("install\\.R$", "^data-raw", "^exercises\\/", "^make-exercises\\.R$")
 for (i in seq_along(ignore)) files <- files[!grepl(ignore[i], files)]
 
 folders <- c("data", "functions", "parallel", "performance", "rcpp")

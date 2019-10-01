@@ -1,5 +1,7 @@
 # Advanced R Workshop
 
+See [`admin/outline.md`](https://github.com/seananderson/adv-r-course/blob/master/admin/outline.md) for an outline of learning goals.
+
 ## Functions and functional programming
 
 - Introduction and foundations refresher
