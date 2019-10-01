@@ -231,7 +231,7 @@ get_slope <- function(x, y) {
 Use `map2_dbl()` to return the slope for each country. Try it 3 ways:
 
 1. The way written I started with below.
-2. Via the `~` purrr shortcut to an anonymous function.
+2. Via the `~` purrr shortcut to an anonymous function passing `.x` and `.y` explicitly.
 3. Via the standard R anonymous function syntax.
 
 Why might you pick one over another?
@@ -268,7 +268,7 @@ plus <- function(x, y) x + y
 pmap_dbl(df, plus)
 ```
 
-How can we fix it (by only modifying our function)? There are at least 2 ways. Think about it for a minute and try your solutions below:
+How can we fix it by only modifying our function? There are at least 2 ways. Think about it for a minute and try your solutions below:
 
 Hint: one of the solutions involves `...`.
 
@@ -285,7 +285,7 @@ pmap_dbl(df, plus3)
 Let's put this all together and try the following:
 
 1. Make a function to calculate the slope of the percentage of women in parliament for each country but only for the years 2010 and after.
-2. Make the 2010 an argument named `cutoff` and try passing it via the `...` in your `map()` function.
+2. Make the 2010 an argument named `cutoff` and try passing it via the `...` in `map()`.
 - Rerun your calculation for all years 2005 and after using your new function.
 
 ```{r results="hide"}
@@ -307,7 +307,7 @@ Was that too easy? If so, try the following next-level purrr exercise in one set
 - Use `map()` to `sort()` the output from highest to lowest value (i.e. also use `rev()`).
 - Use `[`() to extract only the top 5 countries for each cut off.
 
-Yes, there are many other tidyverse ways to do this, but try to do it with purrr and base R functions as an exercise.
+Yes, there are other ways to do this, but try to do it with purrr and base R functions as an exercise.
 
 ```{r}
 map(seq(1990, 2010, 5), function(z) # exercise
@@ -323,7 +323,7 @@ purrr has a lot of helpful functions for working with lists beyond the `map()` f
 
 Take 2 minutes to skim through the help for purrr:
 
-```{r}
+```{r, eval=FALSE}
 help(package = "purrr")
 ```
 
