@@ -3,6 +3,20 @@ title: "Rcpp introduction"
 output: html_document
 ---
 
+# Goals
+
+- Understand when translating R code into C++ via Rcpp might be useful.
+- Become familiar with the basics of C++ and Rcpp syntax.
+- Become familiar with `evalCpp()`, `cppFunction()`, and `sourceCpp()`.
+- Understand how to get common types of data into and out of Rcpp functions.
+- Understand how to call R functions from within C++.
+- Practice translating very basic R functions into C++ via Rcpp.
+- Practice benchmarking the resulting functions.
+- Practice finding and fixing basic C++/Rcpp bugs.
+- Gain an overview of some resources for learning more.
+
+# Rcpp
+
 Rcpp let's us easily integrate C++ code with R. C++ is far more complicated to code in than R but it is blazing fast. In some situations it's well worth the extra trouble. The most common scenarios where it's worth the trouble is when code can't be vectorized because it builds on itself (e.g. simulations) or when some piece of code needs to be called millions of times.
 
 The most basic way we can evaluate C++ code is via `Rcpp::evalCpp()`. This generally isn't too useful except for testing:
@@ -117,7 +131,9 @@ sumCwithR(c(1, 2, 3))
 
 Of course, our C++ function won't be any faster than the R one, but sometimes this can get you out of having to code something that is tricky in C++ but fast enough in R.
 
-# Exercises 1 (practicing reading Rcpp code)
+More details: <https://teuder.github.io/rcpp4everyone_en/230_R_function.html>
+
+# Exercises 1 (practice reading Rcpp code)
 
 1. What is wrong with the following C++ function? Can you fix it?
 
@@ -158,7 +174,7 @@ double f1(NumericVector x) {
 
 Hint: The first value in the vector has to be treated differently than the subsequent values.
 Hint: You'll have to do this in a loop.
-Hint: If you want to challenge, then don't peak! But if you're stuck, I've written a version of the function in R set up the same way you would in C++: `rcpp/cumprod.R`. Take a look at that and then try to translate it below.
+Hint: If you want a challenge then don't peak. However, if you're stuck, I've written a version of the function in R set up the same way you would in C++: `cumprod.R`. Take a look at that and then try to translate it below.
 
 ```{r, eval=FALSE}
 cppFunction('
@@ -188,7 +204,7 @@ Choose your own adventure depending on how confident you are with this. There is
 
 Verify that you get the same answer out of both functions if you start with the same random number generator seed.
 
-Benchmark your Rcpp version against R version using `bench::mark()`. Start with a time series of length 100. Then try it with a time series of length 1e4. How do they compare and why?
+Benchmark your Rcpp version against the R version using `bench::mark()`. Start with a time series of length 100. Then try it with a time series of length 1e4. How do they compare and why?
 
 ```{r}
 source(here::here("rcpp/ricker.R"))
@@ -217,7 +233,7 @@ bench::mark( # exercise
 
 # Exercise 4 (returning other data classes)
 
-Take your file `rcpp/ricker-*.cpp` and copy its contents into `rcpp/ricker-df.cpp`. Edit the end of your function so that it returns a data frame instead of a numeric vector. Make your data frame include the columns year, `x` (for the simulated population density), and a column for each parameter `r`, `K`, and `sigma`.
+Take your file `ricker-*.cpp` and copy the important parts into `ricker-df.cpp`. Edit the end of your function so that it returns a data frame instead of a numeric vector. Make your data frame include the columns year, `x` (for the simulated population density), and a column for each parameter `r`, `K`, and `sigma`.
 
 ```{r}
 sourceCpp(here::here("rcpp/ricker-df.cpp"))

@@ -32,6 +32,10 @@ These data represent the percentage of women in parliament for various countries
 head(d)
 ```
 
+See: <https://github.com/saghirb/Women-in-Parliament-Hex-Sticker>.
+
+The raw data for "Proportion of seats held by women in national parliaments" can be directly downloaded from the World Bank: <https://data.worldbank.org/indicator/SG.GEN.PARL.ZS>
+
 I have converted the data frame into 2 lists split by country for some exercises:
 
 ```{r}
@@ -70,7 +74,7 @@ map(wip_dat, quantile, prob = 0.8)
 
 # Functional programming with our own functions
 
-Suppose we want to do something more complicated that isn't in an existing function. How do that? We write our own function!
+Suppose we want to do something more complicated that isn't in an existing function. How do we do that? We write our own function!
 
 What if we want to calculate the mean women in parliament percentage for each country after dropping the lowest year?
 

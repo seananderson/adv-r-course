@@ -1,3 +1,5 @@
+library(dplyr)
+
 d <- readRDS("../../gfs/report/data-cache/pacific-cod.rds")
 d <- d$survey_sets
 dd <- filter(d, survey_abbrev == "SYN HS") %>%
@@ -18,8 +20,6 @@ saveRDS(dd2, "data/pcod-syn-hs-qcs-wcvi.rds")
 
 # ---------------
 
-library(dplyr)
-library(ggplot2)
 wiptv <- readr::read_csv(here::here("data-raw", "wip.csv"), skip = 4)
 names(wiptv) <- tolower(make.names(names(wiptv)))
 wp <- wiptv %>%
