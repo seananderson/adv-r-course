@@ -3,7 +3,7 @@ files <- list.files(here::here(), pattern = "*.Rmd$|*.R$|*.cpp$",
 ignore <- c("install\\.R$", "^data-raw", "^exercises\\/", "^make-exercises\\.R$")
 for (i in seq_along(ignore)) files <- files[!grepl(ignore[i], files)]
 
-folders <- c("data", "functions", "parallel", "performance", "rcpp")
+folders <- c("data", "data-raw", "functions", "parallel", "performance", "rcpp")
 
 if (file.exists("exercises"))
   stop("Stopping unless you manually delete the 'exercises' folder.")
