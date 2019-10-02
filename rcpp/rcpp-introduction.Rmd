@@ -157,7 +157,7 @@ double f1(NumericVector x) {
   double y = 0.0;
 
   for (int i = 0; i < n; ++i) {
-    y += x[i] / n;
+    y += x[i] / n
   }
   return y;
 }
